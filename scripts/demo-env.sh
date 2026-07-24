@@ -35,7 +35,12 @@ echo "==> deploying demo environment"
   --broadcast -vv)
 
 echo
-echo "==> done. addresses: contracts/deployments/local.json"
+echo "==> publishing addresses to the app"
+mkdir -p app/public
+cp contracts/deployments/local.json app/public/local.json
+
+echo
+echo "==> done. addresses: contracts/deployments/local.json (+ app/public/local.json)"
 if [ -n "$ANVIL_PID" ]; then
   echo "==> anvil keeps running in foreground; Ctrl-C to stop"
   wait "$ANVIL_PID"

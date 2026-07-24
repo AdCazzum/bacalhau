@@ -10,3 +10,4 @@ target/
 .env.*
 !.env.example
 deployments/
+app/public/local.json
