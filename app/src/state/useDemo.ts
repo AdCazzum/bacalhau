@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Address, Hex } from "viem";
 
-import { aquaAbi } from "../lib/abi";
+import { aquaAbi, erc20Abi } from "../lib/abi";
 import { loadDeployment, publicClient, type Deployment } from "../lib/chain";
 import { decodeOrder, type Order } from "../lib/order";
 
@@ -25,10 +25,16 @@ export interface Fill {
   amountOut: bigint;
 }
 
+export interface WalletBalances {
+  weth: bigint;
+  usdc: bigint;
+}
+
 export interface DemoState {
   deployment: Deployment | null;
   strategies: Strategy[];
   fills: Fill[]; // newest first, across all strategies
+  wallet: WalletBalances | null;
   error: string | null;
   refresh: () => void;
 }
@@ -39,6 +45,7 @@ export function useDemo(): DemoState {
   const [deployment, setDeployment] = useState<Deployment | null>(null);
   const [strategies, setStrategies] = useState<Strategy[]>([]);
   const [fills, setFills] = useState<Fill[]>([]);
+  const [wallet, setWallet] = useState<WalletBalances | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
   const busy = useRef(false);
@@ -57,9 +64,10 @@ export function useDemo(): DemoState {
     if (!deployment || busy.current) return;
     busy.current = true;
     sync(deployment)
-      .then(({ strategies, fills }) => {
+      .then(({ strategies, fills, wallet }) => {
         setStrategies(strategies);
         setFills(fills);
+        setWallet(wallet);
         setError(null);
       })
       .catch((e) => setError(String(e)))
@@ -68,14 +76,16 @@ export function useDemo(): DemoState {
       });
   }, [deployment, tick]);
 
-  return { deployment, strategies, fills, error, refresh: () => setTick((t) => t + 1) };
+  return { deployment, strategies, fills, wallet, error, refresh: () => setTick((t) => t + 1) };
 }
 
-async function sync(dep: Deployment): Promise<{ strategies: Strategy[]; fills: Fill[] }> {
+async function sync(
+  dep: Deployment,
+): Promise<{ strategies: Strategy[]; fills: Fill[]; wallet: WalletBalances }> {
   const logs = await publicClient.getContractEvents({
     address: dep.aqua,
     abi: aquaAbi,
-    fromBlock: 0n,
+    fromBlock: BigInt(dep.deployBlock),
   });
 
   const docked = new Set<Hex>();
@@ -151,5 +161,10 @@ async function sync(dep: Deployment): Promise<{ strategies: Strategy[]; fills: F
   }
   strategies.sort((a, b) => (a.status === "live" ? -1 : 1) - (b.status === "live" ? -1 : 1));
 
-  return { strategies, fills };
+  const [walletWeth, walletUsdc] = await Promise.all([
+    publicClient.readContract({ address: dep.weth, abi: erc20Abi, functionName: "balanceOf", args: [dep.maker] }) as Promise<bigint>,
+    publicClient.readContract({ address: dep.usdc, abi: erc20Abi, functionName: "balanceOf", args: [dep.maker] }) as Promise<bigint>,
+  ]);
+
+  return { strategies, fills, wallet: { weth: walletWeth, usdc: walletUsdc } };
 }

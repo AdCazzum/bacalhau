@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { parseEther, formatEther } from "viem";
+import { formatUnits } from "viem";
 
 import { compile, validate, type Block } from "../compiler/compile";
 import { BPS as BPS_N, MAX_SKEW_CAP } from "../compiler/opcodes";
@@ -8,6 +8,7 @@ import { publicClient, walletClient } from "../lib/chain";
 import { buildAquaOrder, encodeOrder } from "../lib/order";
 import { previewAmountOut, BPS } from "../lib/preview";
 import type { DemoState } from "../state/useDemo";
+import { parseAmount, USDC_DECIMALS, WETH_DECIMALS } from "../lib/units";
 import { useMarketPrice } from "../state/useMarketPrice";
 
 interface CanvasProps {
@@ -43,8 +44,8 @@ export function Canvas({ demo, onShipped }: CanvasProps) {
   const [shipState, setShipState] = useState<"idle" | "signing" | "pending">("idle");
   const [shipError, setShipError] = useState<string | null>(null);
 
-  const allocWeth = safeParse(amountWeth);
-  const allocUsdc = safeParse(amountUsdc);
+  const allocWeth = parseAmount(amountWeth, WETH_DECIMALS);
+  const allocUsdc = parseAmount(amountUsdc, USDC_DECIMALS);
 
   // Skew targets follow the allocation (target split = shipped split).
   const effective = useMemo(
@@ -73,14 +74,18 @@ export function Canvas({ demo, onShipped }: CanvasProps) {
     for (let i = 1; i <= 40; i++) {
       const size = (allocWeth * BigInt(i)) / 80n; // up to 50% of reserve
       const out = previewAmountOut(size, params);
-      points.push({ size: Number(formatEther(size)), price: Number(formatEther((out * 10n ** 18n) / size)) });
+      const sizeF = Number(formatUnits(size, WETH_DECIMALS));
+      const outF = Number(formatUnits(out, USDC_DECIMALS));
+      points.push({ size: sizeF, price: sizeF > 0 ? outF / sizeF : 0 });
     }
     return points;
   }, [blocks, allocWeth, allocUsdc, feeBps, hasSkew]);
-
   const marketState = useMarketPrice();
-  const marketPrice = marketState.market ? Number(formatEther(marketState.market.price)) : null;
-  const spot = allocWeth > 0n ? Number(formatEther((allocUsdc * 10n ** 18n) / allocWeth)) : null;
+  const marketPrice = marketState.market ? Number(formatUnits(marketState.market.price, 18)) : null;
+  const spot =
+    allocWeth > 0n
+      ? Number(formatUnits(allocUsdc, USDC_DECIMALS)) / Number(formatUnits(allocWeth, WETH_DECIMALS))
+      : null;
   const divergencePct =
     marketPrice && spot ? ((spot - marketPrice) / marketPrice) * 100 : null;
   const summary = useMemo(() => {
@@ -280,12 +285,4 @@ function CurveChart({ points, market }: { points: { size: number; price: number 
       )}
     </svg>
   );
-}
-
-function safeParse(v: string): bigint {
-  try {
-    return parseEther(v === "" ? "0" : v);
-  } catch {
-    return 0n;
-  }
 }

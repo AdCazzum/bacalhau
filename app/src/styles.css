@@ -126,3 +126,22 @@ h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1.2px; color: v
 .divergence { font-size: 12px; color: var(--aqua); }
 .divergence.warn { color: var(--warn); }
 .chart .axis.market { fill: var(--warn); }
+
+.rebalance {
+  border-top: 1px solid var(--line); padding-top: 12px; margin-top: 4px;
+  background: linear-gradient(180deg, rgba(240,179,87,0.06), transparent);
+  border-radius: 8px; padding: 12px;
+}
+.rebalance header { font-size: 12px; color: var(--warn); margin-bottom: 6px; font-weight: 600; }
+.rebalance .row { display: flex; gap: 8px; margin-top: 8px; }
+.rebalance button { background: var(--panel-2); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+.rebalance button.go { background: var(--warn); color: var(--bg); font-weight: 600; border-color: var(--warn); }
+.rebalance button:disabled { opacity: 0.5; }
+
+.wallet-inv {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+  padding: 16px; margin-bottom: 18px;
+}
+.wallet-inv header { font-size: 13px; color: var(--text); font-weight: 600; margin-bottom: 10px; }
+.wallet-inv.rebalance header { color: var(--warn); }
+.wallet-inv .balances { margin-top: 8px; }

@@ -134,6 +134,7 @@ contract DemoEnv is Script {
         string memory json = "deployment";
         vm.serializeAddress(json, "aqua", address(aqua));
         vm.serializeAddress(json, "router", address(router));
+        vm.serializeUint(json, "deployBlock", block.number);
         vm.serializeAddress(json, "weth", BASE_WETH);
         vm.serializeAddress(json, "usdc", BASE_USDC);
         vm.serializeUint(json, "usdcDecimals", 6);

@@ -1,12 +1,13 @@
 import {
   createPublicClient,
   createWalletClient,
+  defineChain,
   http,
   type Address,
   type Hex,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { foundry } from "viem/chains";
+import { base } from "viem/chains";
 
 /**
  * PoC posture (docs/08): the app drives a local demo wallet directly —
@@ -14,13 +15,19 @@ import { foundry } from "viem/chains";
  */
 const DEMO_KEY: Hex = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 
+/** anvil fork of Base: chain id 8453 (must match for Permit2 EIP-712), local RPC. */
+const forkChain = defineChain({
+  ...base,
+  rpcUrls: { default: { http: ["http://127.0.0.1:8545"] } },
+});
+
 export const demoAccount = privateKeyToAccount(DEMO_KEY);
 
-export const publicClient = createPublicClient({ chain: foundry, transport: http() });
+export const publicClient = createPublicClient({ chain: forkChain, transport: http() });
 
 export const walletClient = createWalletClient({
   account: demoAccount,
-  chain: foundry,
+  chain: forkChain,
   transport: http(),
 });
 
@@ -29,6 +36,9 @@ export interface Deployment {
   router: Address;
   weth: Address;
   usdc: Address;
+  usdcDecimals: number;
+  chainId: number;
+  deployBlock: number;
   maker: Address;
   taker: Address;
   seedStrategyHash: Hex;
