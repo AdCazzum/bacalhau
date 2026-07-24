@@ -5,13 +5,13 @@ import { aquaAbi, erc20Abi, routerAbi, takerAbi } from "../lib/abi";
 import { publicClient, walletClient } from "../lib/chain";
 import { takerData } from "../lib/order";
 import type { DemoState, Strategy } from "../state/useDemo";
-
+import { useMarketPrice } from "../state/useMarketPrice";
 interface DashboardProps {
   demo: DemoState;
 }
 
 export function Dashboard({ demo }: DashboardProps) {
-  if (!demo.deployment) return <div className="empty">Loading deployment…</div>;
+  const marketState = useMarketPrice();
 
   return (
     <div className="dashboard">
@@ -21,7 +21,7 @@ export function Dashboard({ demo }: DashboardProps) {
           <div className="empty">No strategies yet — compose one on the Canvas.</div>
         )}
         {demo.strategies.map((s) => (
-          <StrategyCard key={s.hash} strategy={s} demo={demo} />
+          <StrategyCard key={s.hash} strategy={s} demo={demo} marketPrice={marketState.market?.price ?? null} />
         ))}
       </section>
 
@@ -44,10 +44,11 @@ export function Dashboard({ demo }: DashboardProps) {
   );
 }
 
-function StrategyCard({ strategy, demo }: { strategy: Strategy; demo: DemoState }) {
+function StrategyCard({ strategy, demo, marketPrice }: { strategy: Strategy; demo: DemoState; marketPrice: bigint | null }) {
   const dep = demo.deployment!;
-  const total = strategy.balanceWeth + strategy.balanceUsdc;
-  const wethShare = total > 0n ? Number((strategy.balanceWeth * 1000n) / total) / 10 : 0;
+  const wethValue = marketPrice !== null ? (strategy.balanceWeth * marketPrice) / 10n ** 18n : strategy.balanceWeth;
+  const total = wethValue + strategy.balanceUsdc;
+  const wethShare = total > 0n ? Number((wethValue * 1000n) / total) / 10 : 0;
 
   return (
     <div className={`card ${strategy.status}`}>

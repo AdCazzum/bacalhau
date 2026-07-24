@@ -8,6 +8,7 @@ import { publicClient, walletClient } from "../lib/chain";
 import { buildAquaOrder, encodeOrder } from "../lib/order";
 import { previewAmountOut, BPS } from "../lib/preview";
 import type { DemoState } from "../state/useDemo";
+import { useMarketPrice } from "../state/useMarketPrice";
 
 interface CanvasProps {
   demo: DemoState;
@@ -77,6 +78,11 @@ export function Canvas({ demo, onShipped }: CanvasProps) {
     return points;
   }, [blocks, allocWeth, allocUsdc, feeBps, hasSkew]);
 
+  const marketState = useMarketPrice();
+  const marketPrice = marketState.market ? Number(formatEther(marketState.market.price)) : null;
+  const spot = allocWeth > 0n ? Number(formatEther((allocUsdc * 10n ** 18n) / allocWeth)) : null;
+  const divergencePct =
+    marketPrice && spot ? ((spot - marketPrice) / marketPrice) * 100 : null;
   const summary = useMemo(() => {
     const parts = [`Market-make WETH/USDC on ${amountWeth} WETH + ${amountUsdc} USDC`];
     if (hasSkew) parts.push("self-balancing toward the shipped split");
@@ -162,7 +168,15 @@ export function Canvas({ demo, onShipped }: CanvasProps) {
 
       <aside className="preview">
         <h2>Preview</h2>
-        <CurveChart points={curve} />
+        <CurveChart points={curve} market={marketPrice} />
+        {divergencePct !== null && (
+          <p className={Math.abs(divergencePct) > 2 ? "divergence warn" : "divergence"}>
+            Opening quote {divergencePct >= 0 ? "+" : ""}{divergencePct.toFixed(1)}% vs Uniswap market
+            {marketState.ageSeconds !== null && marketState.ageSeconds > 15 && ` (as of ${marketState.ageSeconds}s ago)`}
+            {Math.abs(divergencePct) > 2 && " — arbitrageurs will close this gap"}
+          </p>
+        )}
+        {!marketState.enabled && <p className="hint">Set VITE_UNISWAP_API_KEY for the live market overlay.</p>}
         <p className="summary">{summary}</p>
         <div className="alloc">
           <label>
@@ -231,14 +245,15 @@ function BlockParams({ block, onChange }: { block: Block; onChange: (b: Block) =
   }
 }
 
-function CurveChart({ points }: { points: { size: number; price: number }[] }) {
+function CurveChart({ points, market }: { points: { size: number; price: number }[]; market: number | null }) {
   if (points.length === 0) return <div className="chart empty">set allocations</div>;
   const w = 280;
   const h = 140;
   const maxSize = points[points.length - 1]!.size;
   const prices = points.map((p) => p.price);
-  const minP = Math.min(...prices) * 0.98;
-  const maxP = Math.max(...prices) * 1.02;
+  const withMarket = market !== null ? [...prices, market] : prices;
+  const minP = Math.min(...withMarket) * 0.98;
+  const maxP = Math.max(...withMarket) * 1.02;
   const path = points
     .map((p, i) => {
       const x = (p.size / maxSize) * w;
@@ -250,6 +265,19 @@ function CurveChart({ points }: { points: { size: number; price: number }[] }) {
     <svg className="chart" viewBox={`0 0 ${w} ${h}`}>
       <path d={path} fill="none" stroke="var(--aqua)" strokeWidth="2" />
       <text x="4" y="12" className="axis">execution price (USDC/WETH) vs trade size</text>
+      {market !== null && market >= minP && market <= maxP && (
+        <>
+          <line
+            x1="0" x2={w}
+            y1={h - ((market - minP) / (maxP - minP)) * h}
+            y2={h - ((market - minP) / (maxP - minP)) * h}
+            stroke="var(--warn)" strokeDasharray="4 3" strokeWidth="1.5"
+          />
+          <text x={w - 4} y={h - ((market - minP) / (maxP - minP)) * h - 4} textAnchor="end" className="axis market">
+            Uniswap market
+          </text>
+        </>
+      )}
     </svg>
   );
 }

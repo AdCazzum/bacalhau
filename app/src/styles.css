@@ -122,3 +122,7 @@ h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1.2px; color: v
 }
 
 .empty { color: var(--muted); font-size: 14px; padding: 24px; text-align: center; }
+
+.divergence { font-size: 12px; color: var(--aqua); }
+.divergence.warn { color: var(--warn); }
+.chart .axis.market { fill: var(--warn); }
