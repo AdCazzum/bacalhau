@@ -1,0 +1,11 @@
+.direnv/
+result
+node_modules/
+dist/
+out/
+cache/
+broadcast/
+target/
+.env
+.env.*
+!.env.example
