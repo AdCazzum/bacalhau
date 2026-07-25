@@ -379,18 +379,22 @@ export function Canvas({ demo, onShipped }: CanvasProps) {
       <aside className="preview">
         <h2>Preview</h2>
 
+        <p className="hint">
+          You are the maker. Preview the side a counterparty trades from — your
+          strategy can quote each one differently.
+        </p>
         <div className="side-toggle">
           <button
             className={previewSide === "sellWeth" ? "on" : ""}
             onClick={() => setPreviewSide("sellWeth")}
           >
-            taker sells WETH
+            they sell you WETH
           </button>
           <button
             className={previewSide === "buyWeth" ? "on" : ""}
             onClick={() => setPreviewSide("buyWeth")}
           >
-            taker buys WETH
+            they buy WETH from you
           </button>
         </div>
 

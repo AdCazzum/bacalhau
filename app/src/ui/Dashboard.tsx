@@ -314,7 +314,7 @@ function TestSwap({ strategy, demo }: { strategy: Strategy; demo: DemoState }) {
 
   return (
     <div className="testswap">
-      <header>Execute test swap (you are the taker)</header>
+      <header>Execute test swap — play the counterparty against your own strategy</header>
       <div className="row">
         <button className="dir-toggle" onClick={() => { setSellWeth(!sellWeth); setQuoted(null); }}>
           {sellWeth ? "sell WETH" : "sell USDC"}
