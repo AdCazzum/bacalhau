@@ -7,46 +7,56 @@ Functional description of what the user does and sees. No implementation detail.
 **Actor:** maker (LP). **Goal:** design a strategy and understand its behavior
 before committing anything.
 
-1. User lands on the **Canvas** with an empty strategy and a token-pair picker
-   (e.g. WETH/USDC).
-2. A **block palette** lists available building blocks, grouped:
-   - *Pricing* (required, pick one): fixed rate, constant-product curve,
-     oracle-pegged rate
-   - *Price modifiers*: dutch auction (price improves over time),
-     gas-responsive adjustment
-   - *Fees*: flat fee, progressive fee (grows with trade size)
-   - *Guards*: deadline, minimum rate, one-shot order, min taker balance
-3. User drags blocks into a **pipeline** (ordered left→right). Order is
-   meaningful and the UI says so: reordering changes behavior; incompatible
-   orders are flagged inline with a plain-language explanation.
-4. Each block has a small parameter form (fee %, deadline, amounts...).
-   Validation is immediate; errors are attached to the block, not a global
-   toast.
+1. User lands on the **Canvas**. It opens with an empty graph and a row of
+   **templates** — an empty canvas is a bad first experience, and the templates
+   double as the strategies worth showing.
+2. A **block palette** lists the building blocks, grouped by the zone they
+   belong to:
+   - *Pricing* (required, exactly one per path): constant-product curve
+   - *Modifiers*: inventory skew (tilt toward a target split), price range
+     (concentrate liquidity into a band), flow decay (repeat trades pay worse,
+     the penalty heals over time)
+   - *Fees*: flat fee
+   - *Guards*: deadline, holder gate
+   - *Branches*: on trade direction, or on how much of the pair is held
+3. User wires blocks into a **graph**, not a list. A strategy is a program with
+   branches, because that is what the VM executes: a branch has two outputs,
+   `then` and `else`, and both legs may rejoin the same downstream block.
+   Order is meaningful and enforced — modifiers and fees must precede pricing,
+   and a branch that reads inventory must precede anything that shifts it.
+4. Each block carries its parameters inline. Validation is immediate and
+   attached to the offending block, never a global toast; the ship button
+   disables while anything is invalid.
 5. The **preview panel** (always visible, right side) updates on every change:
-   - price curve: execution price vs trade size, both directions
-   - live **market reference line** for the same pair, so the user sees at a
-     glance where their quote sits relative to the market ("you are quoting
-     1.8% below market — arbitrageurs will drain this")
-   - a plain-language summary sentence: "Sells WETH from 2000 USDC/WETH,
-     price improves 0.1%/min, 0.3% fee, expires in 24h."
-6. Strategy can be **saved as draft** (named) at any time.
+   - a direction switch — *they sell you WETH* / *they buy WETH from you* —
+     because a graph can quote each side differently
+   - **live path highlighting**: the blocks that would actually run for the
+     previewed direction and current inventory, resolved the same way the VM
+     resolves them
+   - price curve for that path: execution price vs trade size
+   - live **market reference line** for the same pair, so the user sees where
+     their quote sits ("you are quoting 1.8% below market — arbitrageurs will
+     drain this")
+   - a plain-language summary of the live path, and the compiled bytecode size
+     (expandable to the bytes themselves)
 
 **Edge cases**
-- No pricing block → ship button disabled, palette hints what is missing.
-- Dangerous compositions (e.g. no deadline on an auction) → non-blocking
-  warning badge with explanation.
+- No pricing block on some path → ship disabled, the error names the path.
+- A cycle → rejected: the VM has no arithmetic, so a loop could never compute
+  an exit condition.
+- Dangerous but legal compositions (e.g. no deadline) → non-blocking warning.
 
 ## Flow 2 — Ship a strategy
 
 **Actor:** maker. **Goal:** make the strategy live using own wallet funds.
 
-1. From the canvas, user clicks **Ship**. A review sheet shows: pipeline
-   summary, token amounts to allocate, the fact that **funds stay in the
-   wallet** (first-run explainer), and network.
+1. From the canvas, user clicks **Ship**. What is committed is the compiled
+   graph: the summary names the live path, the token amounts to allocate, and
+   the fact that **funds stay in the wallet** (first-run explainer).
 2. First time per token: an approval step, clearly labeled as one-time.
 3. User confirms; wallet prompts; progress states: signing → pending → live.
-4. On success the user is taken to the strategy's **detail page**, already
-   showing it as active with its allocated (virtual) balances.
+4. On success the user lands on the **Dashboard**, the new strategy already
+   showing as active with its allocated (virtual) balances.
 
 **Edge cases**
 - Insufficient wallet balance → inline error before wallet prompt.
@@ -65,8 +75,11 @@ before committing anything.
    - full fill history (time, direction, size, realized price)
    - realized price plotted against market price at fill time ("edge captured")
    - inventory over time chart
-   - the strategy's pipeline, rendered read-only
+   - the strategy's graph, rendered read-only
 4. Every strategy has a **public shareable page** (read-only detail view).
+5. An **indexed view** shows the same strategies as the subgraph sees them —
+   including a head block, so it is visible that the data is indexed rather
+   than read straight off the node.
 
 ## Flow 4 — Rebalance inventory
 

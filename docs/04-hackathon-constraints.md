@@ -9,8 +9,8 @@ these.
 
 | Product capability | Powered by | Track |
 |---|---|---|
-| Strategy blocks, pipeline, ship/dock, self-custody model | 1inch Aqua + SwapVM (official contracts) | 1inch — Build an Aqua App ($5k) |
-| Live dashboard, activity feed, fill history, public pages | The Graph: Substreams module → substreams-powered subgraph | The Graph — Composable/Standardized ($3k) |
+| Strategy graph, custom opcodes, ship/dock, self-custody model | 1inch Aqua + SwapVM (official contracts) | 1inch — Build an Aqua App ($5k) |
+| Live dashboard, activity feed, fill history, public pages | The Graph: reusable Substreams module + subgraph over the same Aqua events | The Graph — Composable/Standardized ($3k) |
 | Market reference line, rebalance quoting & execution | Uniswap API (Developer Platform key) | Uniswap — Best API Integration ($7k) |
 
 ## Qualification requirements checklist

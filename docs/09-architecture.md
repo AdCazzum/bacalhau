@@ -48,17 +48,29 @@ edits — but the compiler spec below is the authority.
 
 ## Compiler (app-side)
 
-- TS module: `pipeline JSON -> bytecode` mirroring the Solidity
-  `Program.build(Opcode.X, ArgsBuilder...)` encoding.
-- Canonical emission order:
-  `gates -> invalidate-bit -> balances -> price modifiers -> core swap ->
-   fees -> min-rate -> deadline -> trailing invalidators`.
-- Validation errors (05) are computed from the same table — single source of
-  truth for both UI hints and emission.
-- **Golden tests**: for each template in 05, a Foundry script builds the same
-  program in Solidity; CI asserts byte-equality with the TS output, then
-  executes it on a fork (ship -> swap -> assert amounts). This is the highest
-  ROI test in the project: it certifies UI-built strategies are real.
+`app/src/compiler/graph.ts`: **strategy graph → bytecode**, a two-pass
+assembler rather than a concatenation, because a strategy is a control-flow
+graph (SwapVM's run loop re-reads the program counter after every instruction).
+
+- **Pass 1** lays nodes out — else legs fall through, so a conditional only
+  encodes its `then` target — and sizes them. Every instruction is fixed-width,
+  so the offsets computed here stay valid once real bytes are emitted.
+- **Pass 2** emits with labels resolved. Labels resolve **only** to emission-unit
+  boundaries: a target inside an instruction's arguments would make the VM
+  execute argument bytes as opcodes. A node reached from two legs is emitted
+  once and jumped to, never duplicated.
+- **Validation is path-sensitive**, tracked as min/max counts over a topological
+  order rather than by enumerating paths (exponential in a DAG): exactly one
+  pricing node per path, nothing fee- or balance-related after it, inventory
+  branches before anything that shifts the balances they read, no cycles, single
+  entry, everything reachable. The same errors drive the UI badges — one source
+  of truth.
+- **Golden test**: the linear `flatFee → constantProduct` case is pinned
+  byte-identically in Solidity (`contracts/test/GoldenPrograms.t.sol`) and
+  TypeScript (`app/src/compiler/graph.test.ts`), which also proves the graph
+  compiler did not drift from the audited emission. Alongside it: a decoder that
+  walks the program as the VM does and asserts every jump target is an
+  instruction boundary, and a property test over 200 random branchy graphs.
 
 ## Custom instruction: InventorySkew
 
@@ -90,7 +102,8 @@ edits — but the compiler spec below is the authority.
 ## Frontend stack (decided)
 
 - Vite + React + TypeScript
-- React Flow for the canvas (linear chain with fixed zones — R4 guard)
+- React Flow for the canvas (free node graph; the R4 "linear chain" guard was
+  lifted deliberately — branching is what the strategies need)
 - wagmi + viem (wallet, fork chain config), TanStack Query
 - graphql-request for subgraph queries; polling for feed (websockets only if
   trivially available)

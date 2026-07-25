@@ -10,30 +10,38 @@ The flagship screen. Three zones:
 
 ```
 ┌────────────┬──────────────────────────────┬─────────────────┐
-│  Palette   │        Pipeline canvas       │  Preview panel  │
-│ (blocks by │  [Pricing]→[Fee]→[Deadline]  │  curve + market │
-│  category) │   drag / connect / reorder   │  line + summary │
+│ Templates  │        Graph canvas          │  Preview panel  │
+│     +      │   [If Direction]─then─▶[Fee] │  side switch    │
+│  Palette   │        └──else──▶[Fee]──▶[×] │  curve + market │
+│ (by zone)  │   drag to wire, two outputs  │  summary + bytes│
 ├────────────┴──────────────────────────────┴─────────────────┤
-│ Footer bar: pair picker · draft name · [Save] [Ship →]      │
+│ Allocation (WETH / USDC) · [Ship strategy →]                │
 └──────────────────────────────────────────────────────────────┘
 ```
 
-- **Palette** (left, collapsible): blocks as cards with icon, name, one-line
-  description. Search box. Blocks not compatible with current pipeline are
-  dimmed with a tooltip explaining why.
-- **Pipeline canvas** (center): horizontal chain of connected block nodes.
-  Selected block opens its parameter form in a side popover. Badges on blocks:
-  error (red, blocking), warning (amber, advisory). Empty state shows 3
-  one-click **templates**: "Limit order", "Passive AMM", "Dutch auction".
+- **Templates** (left, top): one click loads a complete strategy, laid out
+  left-to-right with branches stacked. Ones that a constant-product pool cannot
+  express are marked, because that is the pitch.
+- **Palette** (left, below): blocks as cards with zone, name, one-line
+  description. Our own SwapVM instructions carry a star — the custom opcodes are
+  the technical claim, so they should be visible, not buried.
+- **Graph canvas** (center): a node editor, not a chain. Steps have one output;
+  branch nodes have two, labelled `then` and `else`, and are drawn dashed so a
+  fork is recognisable at a glance. Parameters are edited inline on the node.
+  Blocks that fail validation get an amber border and the reason underneath.
+  Nodes on the **live path** — the ones that would actually run for the
+  previewed direction — are ringed in aqua.
 - **Preview panel** (right):
-  - top: price-vs-size chart, one curve per direction, market reference line
-    (live, subtly animated). Divergence from market highlighted with a shaded
-    band and a caption ("−1.8% vs market").
-  - middle: plain-language strategy summary (auto-generated sentence).
-  - bottom: allocation inputs (amount per token) + projected quote at 3 sample
-    sizes.
-- **Ship button**: disabled until pipeline valid + amounts set; on click opens
-  the review sheet (see Flow 2).
+  - a direction switch phrased from the maker's side ("they sell you WETH"),
+    since everything else on screen addresses the maker
+  - price-vs-size chart for the live path, with the live market reference line;
+    divergence called out in words ("+7.8% vs market — arbitrageurs will close
+    this gap")
+  - plain-language summary of the live path
+  - the compiled bytecode, collapsed to its size and expandable to the bytes:
+    proof that a drawing became a program
+  - allocation inputs, with the note that funds stay in the wallet
+- **Ship button**: disabled until the graph validates and amounts are set.
 
 ## S2 — Dashboard
 
@@ -66,8 +74,9 @@ Same layout; public page hides actions and wallet-level data.
 - KPI row: allocated value, lifetime volume, fills, captured edge vs market.
 - Charts (tabbed): fills on price timeline (strategy price vs market price),
   inventory over time, cumulative volume.
-- **Pipeline viewer**: the strategy's blocks, read-only, same visual as canvas
-  — this is what makes a shared link self-explanatory.
+- **Graph viewer**: the strategy's blocks and branches, read-only, same visual
+  as the canvas — this is what makes a shared link self-explanatory, and it
+  shows a reader which leg their trade would take.
 - Fill table: time, direction, in/out amounts, realized price, vs-market delta.
 - **Execute test swap** panel (owner only): direction, size, quoted result,
   execute button. Results append to feed/table live.

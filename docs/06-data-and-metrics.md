@@ -12,7 +12,7 @@ stated; wallet-level views aggregate over the wallet's strategies.
 | id | stable unique identifier (derived from its on-chain identity) |
 | owner | maker wallet address |
 | pair | the two tokens quoted |
-| pipeline | ordered list of blocks + parameters (as composed) |
+| graph | the strategy's blocks, branches and parameters (as composed) |
 | status | `live` · `expired` (deadline passed) · `docked` |
 | shippedAt / dockedAt | timestamps |
 | allocated | initial virtual balance per token |
@@ -29,7 +29,7 @@ stated; wallet-level views aggregate over the wallet's strategies.
 | edgeBps | (realizedPrice − marketPriceAtFill) / marketPriceAtFill, signed, in bps, from the maker's perspective |
 
 ### Draft
-Stored locally in the browser (name, pipeline, amounts). Never leaves the
+Stored locally in the browser (name, graph, amounts). Never leaves the
 user's machine; no server-side persistence in v1.
 
 ## Metrics
@@ -75,6 +75,6 @@ silently freezes.
 
 ## Public vs private
 
-Public strategy page shows: pair, pipeline, status, volume, fills, captured
+Public strategy page shows: pair, graph, status, volume, fills, captured
 edge. It hides: wallet-level aggregates, earnings, drafts, rebalance controls.
 Owner sees everything.

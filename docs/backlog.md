@@ -6,7 +6,7 @@ only after the D1 catalog works end to end.
 ## TradFi-inspired strategies (narrative or light additions)
 
 - **Cash-secured put synthetic** — Oracle-Pegged(−offset) + Min Rate +
-  Deadline. Zero new blocks; it is a framing of an existing pipeline.
+  Deadline. Zero new blocks; it is a framing of an existing strategy.
 - **Covered call synthetic** — Oracle-Pegged(+offset) sell-side + Flat Fee +
   Deadline. Pairs with the put into a self-custodial collar.
 - **Iceberg order** — show only a tranche; Studio re-ships the next tranche

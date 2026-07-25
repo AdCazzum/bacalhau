@@ -8,17 +8,43 @@ mapping lives outside the specs.
 Priority tiers: **[D1]** must exist for the demo · **[D2]** if time allows ·
 **[S]** stretch.
 
-## Rules of composition (enforced by the canvas)
+**What actually shipped** (the palette in `app/src/ui/nodeKinds.ts`): Constant-
+Product, Price Range, Inventory Skew ★, Flow Decay, Flat Fee, Deadline, Holder
+Gate, If Direction, If Inventory Above ★. ★ = our own SwapVM instruction.
 
-1. A pipeline has exactly **one Pricing block**, always first.
-2. Modifiers and Fees go between Pricing and Guards; Guards close the pipeline.
-   The canvas auto-slots blocks into the right zone; users reorder only
-   *within* a zone (order still matters and is preserved).
-3. Blocks that cannot coexist (marked below) dim each other in the palette.
-4. Advisory warnings (non-blocking) for risky-but-legal compositions.
+Blocks below without a shipped counterpart — Fixed Rate, Dutch Auction, Min
+Rate, One-Shot, Progressive Fee, Oracle-Pegged — are **not** in the product.
+They belong to SwapVM's *limit-order* opcode table, which needs
+signature-based balances and a different router; our strategies are Aqua-backed
+(`useAquaInsteadOfSignature`), so those instructions are unreachable from this
+app. The tier markers on them record the original plan, not reality; they are
+kept because the catalog is also the design record.
+
+## Rules of composition (enforced by the compiler, surfaced by the canvas)
+
+A strategy is a graph, so the rules are about **every path through it**, not
+about one ordered list. `app/src/compiler/graph.ts` is the authority; the canvas
+only renders what it reports.
+
+1. Every path prices **exactly once**. Zero pricing blocks on a path is an
+   error, and so are two.
+2. Everything that touches balances or fees — Inventory Skew, Price Range, Flow
+   Decay, Flat Fee — must come **before** the pricing block on its path. This is
+   the audited order the official builders use, and the reason `xycConcentrate`
+   reverts if amounts are already computed.
+3. A branch that reads inventory (`If Inventory Above`) must come **before**
+   anything that shifts the balances it tests, or it would read a tilted book.
+4. **No cycles.** The Aqua opcode table has no arithmetic or register
+   comparison, so a back edge could never compute an exit condition; it would
+   just burn gas. (Backward jumps do appear in the emitted bytecode where two
+   legs rejoin a shared block — a join, not a loop.)
+5. Single entry, everything reachable from it.
 
 ```
-[ Pricing ] → [ Modifiers* ] → [ Fees* ] → [ Guards* ]     * = zero or more
+                   ┌─ then ─▶ [ Modifiers* ] → [ Fees* ] ─┐
+[ Guards* ] → [ Branch ]                                  ├─▶ [ Pricing ]
+                   └─ else ─▶ [ Modifiers* ] → [ Fees* ] ─┘
+                                                     * = zero or more
 ```
 
 ## Pricing (pick one, required)
@@ -82,12 +108,12 @@ Fee grows with trade size — small trades cheap, large trades pay for impact.
 - Params: base fee (bps), slope
 - Copy: "Bigger trades pay a bigger fee."
 
-## Guards (optional, close the pipeline)
+## Guards (optional, run before pricing)
 
 ### Deadline [D1]
 Strategy stops quoting at a set time.
 - Params: expiry (datetime or duration)
-- Copy: "Expires {when}." Advisory when absent on any pipeline: "No expiry —
+- Copy: "Expires {when}." Advisory when absent on any path: "No expiry —
   this strategy quotes until you dock it."
 
 ### One-Shot [D1]
@@ -106,17 +132,24 @@ Only takers holding at least X of a given token can fill (allowlist-by-stake).
 - Params: token, minimum balance
 - Copy: "Only takers holding ≥ {amount} {token}."
 
-## Templates (empty-state shortcuts)
+## Templates (one click, from the canvas)
 
-| Template | Pipeline |
-|---|---|
-| Limit order | Fixed Rate → One-Shot → Deadline |
-| Passive AMM | Constant-Product → Flat Fee |
-| Self-balancing MM | Constant-Product → Inventory Skew → Flat Fee → Deadline |
-| Dutch auction | Fixed Rate → Dutch Auction → Deadline |
+Shipped in `app/src/lib/templates.ts`, built as a function of the live
+allocation so the numbers always match what is about to be shipped. ✦ marks the
+ones a constant-product pool cannot express.
 
-The demo uses **Self-balancing MM**: it exercises the custom block, the fee,
-the live dashboard and the rebalance flow in one strategy.
+| Template | Graph | What it is |
+|---|---|---|
+| Passive AMM | Flat Fee → Constant-Product | a Uniswap-style LP position without the pool |
+| Self-balancing MM ✦ | Deadline → Inventory Skew → Flat Fee → Constant-Product | quotes tilt to defend the current mix |
+| Accumulate ETH ✦ | Inventory Skew (70%) → Flat Fee → Constant-Product | pay up to buy ETH, charge up to sell it |
+| Concentrated desk | Price Range (±8%) → Flat Fee → Constant-Product | all liquidity in a band, far deeper quotes |
+| Two-sided desk ✦ | If Direction → {0.05% \| 0.5%} → Constant-Product | cheap on the side you want, expensive on the other |
+| Adaptive desk ✦ | If Inventory Above 70% → {distribute \| accumulate} → Constant-Product | a state machine over inventory |
+
+The demo uses **Two-sided desk** to show that a strategy is a graph, then
+**Adaptive desk** as the centrepiece: it exercises both custom opcodes, and the
+branch flip is observable on-chain by quoting before and after a large swap.
 
 ## Scope change: branching is in
 
