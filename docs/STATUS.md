@@ -83,8 +83,11 @@ Uniswap. Three sponsors: 1inch (core), The Graph (observability), Uniswap
 - **Base Sepolia** (chain 84532, deploy block 44584712) — real public
   deployment, addresses in `contracts/deployments/sepolia.json`:
   Aqua `0xE5Cf2ec690BeE8b59cB8340f469ecfB2f0De98bD`,
-  router `0xF9b0AfdDad9D249Eb22e69b15df2a4E8C1e99ABC`.
-  1 Shipped + 3 Pulled + 5 Pushed on chain, total cost ~0.00006 ETH.
+  router v2 `0x3bE59D013bE1E537173f1F04b066bb14e3fd27f2` (redeployed after
+  the on-chain skew-cap re-check landed in InventorySkew, so verified
+  source matches deployed bytecode; the v1 router's strategies were docked
+  — the subgraph shows the full lifecycle). Seed strategy re-shipped under
+  the v2 salt; indexer confirms LIVE with fills, `hasIndexingErrors: false`.
 - **Demo env**: `nix run .#dev` (process-compose: anvil Base fork → deploy +
   seed → vite) is the single entry point; `scripts/demo-env.sh` and
   `scripts/deal.sh` remain for piecemeal use. `local.json` is per-run and

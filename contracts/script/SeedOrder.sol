@@ -22,7 +22,9 @@ uint128 constant SEED_USDC = 200_000e6;
 /// @dev Per-environment salts: the only byte that differs between the shipped
 ///      seed orders, and the input that keys each strategy hash.
 bytes32 constant DEMO_SEED_SALT = keccak256("bacalhau.demo.seed.v1");
-bytes32 constant SEPOLIA_SEED_SALT = keccak256("bacalhau.sepolia.seed.v1");
+/// @dev v2: the v1 strategy lives on the first router (pre skew-cap re-check)
+///      and was docked when BacalhauRouter was redeployed from fixed source.
+bytes32 constant SEPOLIA_SEED_SALT = keccak256("bacalhau.sepolia.seed.v2");
 
 /// @title SeedOrderLib
 /// @notice The one place that knows how to assemble the self-balancing seed

@@ -3,10 +3,10 @@
   "chainId": 84532,
   "deployBlock": 44584712,
   "maker": "0x4fB5C90d3A828067aE07e134eA82ad14DAD50d58",
-  "router": "0xF9b0AfdDad9D249Eb22e69b15df2a4E8C1e99ABC",
-  "seedStrategyHash": "0xcbfb5efbb19eaf26c8cdbbeadea70aca93829ac4b9f89c001be40c5b4c6395f7",
-  "taker": "0xa6e9A361ccb6eBC02064A5dBE0FA33528d81f92D",
+  "router": "0x3bE59D013bE1E537173f1F04b066bb14e3fd27f2",
+  "seedStrategyHash": "0x7ddff3e8e8ea22101fba2a5a462997865dbf710715e42a84fa14adc165253719",
   "usdc": "0xB6Ec46C767B71a5AA4b51bad4A40827560D63e55",
   "usdcDecimals": 6,
-  "weth": "0x0F599727F37D4Fc8AB5dBD3aFe86c3EbF4A892f7"
+  "weth": "0x0F599727F37D4Fc8AB5dBD3aFe86c3EbF4A892f7",
+  "taker": "0x8b904fa92Dc0E0377093C691022D771e161aC9ec"
 }
