@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { parseUnits, type Address } from "viem";
 
 import { aquaAbi, erc20Abi, routerAbi, takerAbi } from "../lib/abi";
@@ -29,6 +29,19 @@ export function Dashboard({ demo }: DashboardProps) {
       {demo.wallet && marketState.market && (
         <section className="inventory">
           <h2>Wallet inventory</h2>
+          {/* docs/06 freshness contract: a price that stops refreshing shows
+              its age instead of silently freezing the gauges below. */}
+          <p className="provenance">
+            <span>
+              market <b>{fmtAmount(marketState.market.price, 18)} USDC/WETH</b>
+            </span>
+            <span className={(marketState.ageSeconds ?? 0) > 25 ? "warn" : undefined}>
+              as of <b>{marketState.ageSeconds ?? 0}s ago</b>
+            </span>
+            {marketState.error && (
+              <span className="warn">refresh failing — showing last good price</span>
+            )}
+          </p>
           <WalletInventory demo={demo} wallet={demo.wallet} marketPrice={marketState.market.price} />
         </section>
       )}
@@ -149,6 +162,9 @@ function StrategyCard({ strategy, demo, marketPrice }: { strategy: Strategy; dem
   );
 }
 
+/** docs/06: a previewed rebalance quote is executable for 15s, then re-quote. */
+const QUOTE_TTL_MS = 15_000;
+
 function WalletInventory({
   demo,
   wallet,
@@ -162,6 +178,21 @@ function WalletInventory({
   const [state, setState] = useState<"idle" | "quoting" | "executing">("idle");
   const [plan, setPlan] = useState<RebalancePlan | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [planExpired, setPlanExpired] = useState(false);
+
+  // Expire the previewed quote: past the TTL the plan is cleared, Execute
+  // goes dark, and the user must re-quote against the moved market.
+  useEffect(() => {
+    if (!plan) return;
+    const timer = setTimeout(
+      () => {
+        setPlan(null);
+        setPlanExpired(true);
+      },
+      Math.max(plan.quotedAt + QUOTE_TTL_MS - Date.now(), 0),
+    );
+    return () => clearTimeout(timer);
+  }, [plan]);
 
   const wethValue = wethValueInUsdc(wallet.weth, marketPrice);
   const totalValue = wethValue + wallet.usdc;
@@ -187,6 +218,7 @@ function WalletInventory({
   async function preview() {
     setState("quoting");
     setError(null);
+    setPlanExpired(false);
     try {
       const { plan } = await quoteRebalance(sellToken, buyToken, sellAmount, dep.maker);
       setPlan(plan);
@@ -199,6 +231,13 @@ function WalletInventory({
 
   async function execute() {
     if (!plan) return;
+    // Background tabs throttle timers, so the expiry timeout can fire late;
+    // never execute a plan past its TTL regardless.
+    if (Date.now() - plan.quotedAt > QUOTE_TTL_MS) {
+      setPlan(null);
+      setPlanExpired(true);
+      return;
+    }
     setState("executing");
     setError(null);
     try {
@@ -251,6 +290,9 @@ function WalletInventory({
                 <span>quoted by <b>Uniswap Trading API</b></span>
               </p>
             </>
+          )}
+          {planExpired && !plan && (
+            <p className="hint">Quote expired after 15s — preview again for a fresh one.</p>
           )}
           <div className="row">
             <button onClick={preview} disabled={state !== "idle"}>

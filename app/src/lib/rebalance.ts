@@ -26,9 +26,87 @@ export interface RebalancePlan {
   expectedBuyAmount: bigint;
   routeString: string;
   feeTier: number;
+  /** Date.now() when the API quoted; the sheet expires the plan after 15s. */
+  quotedAt: number;
 }
 
 export class RebalanceError extends Error {}
+
+/** 0.05% — the deep Base WETH/USDC pool, used only when the quote names no route. */
+const DEFAULT_FEE_TIER = 500;
+
+/** One pool hop inside the Trading API's structured route (quote.route[i][j]). */
+interface RouteHop {
+  tokenIn?: { address?: string };
+  tokenOut?: { address?: string };
+  /** Fee in hundredths of a bip, e.g. "500" for 0.05%. */
+  fee?: string | number;
+  /** Present on a split's first hop: the input share routed through that split. */
+  amountIn?: string;
+}
+
+function bigintOrZero(raw: string | undefined): bigint {
+  try {
+    return raw ? BigInt(raw) : 0n;
+  } catch {
+    return 0n;
+  }
+}
+
+/**
+ * Fee tier for the direct sell/buy pool, read from the structured route.
+ *
+ * quote.route is an array of splits; each split route[i] is an array of pool
+ * hops route[i][j], each with its own `fee` (hundredths of a bip) and, on the
+ * first hop, the `amountIn` share the router sent through that split. Splits
+ * arrive in arbitrary order — a live 5-WETH quote came back as 5% @ 0.01% /
+ * 15% @ 0.05% / 80% @ 0.05% — so "first fee mentioned" can be a pool the
+ * router trusted with a sliver of the flow, or the first hop of a multi-hop
+ * leg through a different pair entirely. Preference order:
+ *   1. the direct single-hop split for the pair carrying the largest share;
+ *   2. the first hop of the largest split (execution is exactInputSingle on
+ *      the direct pool, so this is best-effort when every split multi-hops);
+ *   3. no structured route: the fee of the largest split named in
+ *      routeString, else the default tier.
+ */
+export function feeTierFromRoute(
+  route: unknown,
+  routeString: string,
+  sellToken: Address,
+  buyToken: Address,
+): number {
+  if (Array.isArray(route)) {
+    const splits = route
+      .filter((s): s is RouteHop[] => Array.isArray(s) && s.length > 0)
+      .map((hops) => ({ hops, share: bigintOrZero(hops[0]?.amountIn) }));
+    const pair = [sellToken.toLowerCase(), buyToken.toLowerCase()];
+    const direct = splits.filter(
+      ({ hops }) =>
+        hops.length === 1 &&
+        hops[0]!.tokenIn?.address?.toLowerCase() === pair[0] &&
+        hops[0]!.tokenOut?.address?.toLowerCase() === pair[1],
+    );
+    const candidates = direct.length > 0 ? direct : splits;
+    const best = candidates.reduce<(typeof splits)[number] | null>(
+      (acc, split) => (acc === null || split.share > acc.share ? split : acc),
+      null,
+    );
+    const fee = Number(best?.hops[0]!.fee);
+    if (Number.isFinite(fee) && fee > 0) return Math.round(fee);
+  }
+  // Defensive fallback for responses without a structured route: the fee of
+  // the *largest* split named in the display string, never just the first.
+  let bestShare = -1;
+  let bestFee: number | null = null;
+  for (const m of routeString.matchAll(/(\d+(?:\.\d+)?)%\s*=\s*\[(\d+(?:\.\d+)?)%\]/g)) {
+    const share = parseFloat(m[1]!);
+    if (share > bestShare) {
+      bestShare = share;
+      bestFee = Math.round(parseFloat(m[2]!) * 10_000);
+    }
+  }
+  return bestFee ?? DEFAULT_FEE_TIER;
+}
 
 /** Quote the corrective swap; returns the plan the sheet previews. */
 export async function quoteRebalance(
@@ -63,17 +141,19 @@ export async function quoteRebalance(
   const body = await res.json();
   const q = body.quote;
   if (!q?.output?.amount) throw new RebalanceError("quote missing output");
-  // Parse the dominant fee tier from the route (e.g. "[0.05%]" -> 500).
-  const feeMatch = /\[(\d+(?:\.\d+)?)%\]/.exec(q.routeString ?? "");
-  const feeTier = feeMatch ? Math.round(parseFloat(feeMatch[1]!) * 10000) : 500;
+  // Fee tier comes from the structured route — the direct pool carrying the
+  // bulk of the flow — not from string-scraping (see feeTierFromRoute).
+  const routeString: string = q.routeString ?? "";
+  const feeTier = feeTierFromRoute(q.route, routeString, sellToken, buyToken);
   return {
     plan: {
       sellToken,
       buyToken,
       sellAmount,
       expectedBuyAmount: BigInt(q.output.amount),
-      routeString: q.routeString ?? "",
+      routeString,
       feeTier,
+      quotedAt: Date.now(),
     },
     quote: q,
     permitData: body.permitData ?? null,

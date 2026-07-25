@@ -60,15 +60,18 @@ signature — and it worked on the first attempt.
 **Disclosure, so nobody has to find it in an audit:** because of the above, our
 execution calls SwapRouter02 directly rather than submitting the API's
 transaction. The API still drives pricing, routing and the fee-tier choice —
-`feeTier` is parsed out of the API's own `routeString`
-([`rebalance.ts:68`](app/src/lib/rebalance.ts)) — but the final call is ours.
+`feeTier` is read from the API's structured `route`, preferring the direct
+pool that carries the largest share of the flow
+([`rebalance.ts`](app/src/lib/rebalance.ts)) — but the final call is ours.
 
 ## 2. `slippageTolerance` must be a number, not a string
 
-Sending `"5"` returns HTTP 400 with a message that doesn't name the offending
-field, so it reads as a malformed request rather than a type error. Sending `5`
-works. Roughly half an hour lost. Either coercing the value or naming the field
-in the error would fix this.
+Sending `"5"` returns HTTP 400; sending `5` works. Roughly half an hour lost.
+When we first hit this (early in the hackathon), the 400 read to us as a
+generic malformed request; retesting as of 2026-07-25, the error does name the
+field — `"slippageTolerance" must be a number` — so either the message
+improved or we misread it under pressure. What remains is the type strictness
+itself: coercing an obviously numeric string would remove the trap entirely.
 
 ## 3. No CORS headers, so every browser integration needs a proxy
 
