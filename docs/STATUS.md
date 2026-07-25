@@ -69,10 +69,13 @@ Uniswap. Three sponsors: 1inch (core), The Graph (observability), Uniswap
 ## Run it
 
 ```
-nix develop
-./scripts/demo-env.sh        # anvil fork of Base + deploy + seed
-cd app && pnpm install && pnpm dev   # http://localhost:5173
+nix run .#dev        # anvil Base fork -> deploy + seed -> vite (localhost:5173)
 ```
+
+process-compose (flake input `process-compose-flake`) wires the three
+processes by readiness, so the app never boots before app/public/local.json
+exists, and `ordered_shutdown` stops vite before the chain. Piecemeal:
+`nix develop`, then `./scripts/demo-env.sh` + `cd app && pnpm dev`.
 
 ## Commits (progressive history for 1inch)
 
