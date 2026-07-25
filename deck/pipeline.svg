@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1250 300" width="1250" height="300" font-family="Inter, system-ui, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#8b90a3"/>
+    </marker>
+    <style>
+      .box { fill: #15161d; stroke: #292c3b; stroke-width: 1.5; rx: 12; }
+      .t  { fill: #e0e0e4; font-size: 17px; font-weight: 600; }
+      .s  { fill: #8b90a3; font-size: 13px; }
+      .e  { stroke: #8b90a3; stroke-width: 1.5; fill: none; marker-end: url(#a); }
+      .lbl{ fill: #8b90a3; font-size: 12px; letter-spacing: .5px; }
+      .aqua   { stroke: #00ebfc; }
+      .pink   { stroke: #ff027f; }
+      .purple { stroke: #6706c0; }
+    </style>
+  </defs>
+
+  <rect class="box" x="10"  y="100" width="190" height="72"/>
+  <text class="t" x="30" y="130">Canvas graph</text>
+  <text class="s" x="30" y="152">drag blocks, no code</text>
+
+  <rect class="box aqua" x="250" y="100" width="200" height="72"/>
+  <text class="t" x="270" y="130">SwapVM bytecode</text>
+  <text class="s" x="270" y="152">two-pass assembler</text>
+
+  <rect class="box aqua" x="500" y="100" width="200" height="72"/>
+  <text class="t" x="520" y="130">Aqua ship()</text>
+  <text class="s" x="520" y="152">1 signature, 0 deposit</text>
+
+  <rect class="box aqua" x="750" y="100" width="230" height="72"/>
+  <text class="t" x="770" y="130">Taker swaps</text>
+  <text class="s" x="770" y="152">VM runs your program</text>
+
+  <rect class="box pink" x="250" y="10" width="200" height="60"/>
+  <text class="t" x="270" y="38">Uniswap API</text>
+  <text class="s" x="270" y="57">reference price</text>
+
+  <rect class="box pink" x="500" y="10" width="200" height="60"/>
+  <text class="t" x="520" y="38">Uniswap API</text>
+  <text class="s" x="520" y="57">quote + route rebalance</text>
+
+  <rect class="box purple" x="750" y="212" width="230" height="72"/>
+  <text class="t" x="770" y="242">Substreams + subgraph</text>
+  <text class="s" x="770" y="264">events → live dashboard</text>
+
+  <path class="e" d="M200,136 H244"/>
+  <path class="e" d="M450,136 H494"/>
+  <path class="e" d="M700,136 H744"/>
+  <path class="e" d="M350,70 V94"/>
+  <path class="e" d="M600,70 V94"/>
+  <path class="e" d="M865,172 V206"/>
+
+  <text class="lbl" x="1000" y="30">1inch Aqua / SwapVM</text>
+  <rect x="988" y="18" width="8" height="8" fill="#00ebfc"/>
+  <text class="lbl" x="1000" y="54">Uniswap Trading API</text>
+  <rect x="988" y="42" width="8" height="8" fill="#ff027f"/>
+  <text class="lbl" x="1000" y="78">The Graph</text>
+  <rect x="988" y="66" width="8" height="8" fill="#6706c0"/>
+</svg>

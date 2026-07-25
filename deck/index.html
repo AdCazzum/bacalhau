@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>QilinSwap — pitch</title>
+    <link rel="stylesheet" href="lib/reveal.css" />
+    <link rel="stylesheet" href="lib/black.css" />
+    <link rel="stylesheet" href="lib/monokai.css" />
+    <style>
+      /* App palette, so the deck and the product look like the same thing. */
+      :root {
+        --r-background-color: #0f1015;
+        --aqua: #00ebfc;
+        --pink: #ff027f;
+        --muted: #8b90a3;
+      }
+      .reveal { font-family: "Inter", system-ui, sans-serif; }
+      .reveal h1, .reveal h2, .reveal h3 { text-transform: none; letter-spacing: 0.5px; }
+      .reveal h1 { color: var(--aqua); }
+      .reveal h2 { color: var(--aqua); font-size: 1.15em; margin-bottom: 0.6em; }
+      .reveal h3 { font-size: 1.1em; font-weight: 500; color: #e0e0e4; }
+      .reveal strong { color: var(--pink); }
+      .reveal code { color: var(--aqua); }
+      .reveal .muted { color: var(--muted); }
+      .reveal .wide { width: 100%; max-width: 1120px; border: none; box-shadow: none; background: none; }
+      /* Two columns beat a bullet list: each slide is one contrast, not one list. */
+      .reveal .two { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; text-align: left; font-size: 0.78em; }
+      .reveal .dark, .reveal .dark * { color: #0f1015; }
+      h1.dark { font-size: 3.2em; letter-spacing: 16px; }
+      p.dark { font-size: 0.7em; letter-spacing: 4px; }
+      .reveal section[data-background-image] h1 { text-shadow: 0 2px 24px #0f1015; }
+      /* Key art is a backdrop, not the message: dim it so text stays readable.
+         (data-background-opacity alone doesn't survive the markdown plugin.) */
+      .reveal-viewport .slide-background-content { filter: brightness(0.4) saturate(1.15); }
+    </style>
+  </head>
+  <body>
+    <div class="reveal">
+      <div class="slides">
+        <section
+          data-markdown="slides.md"
+          data-separator="^\n---\n"
+          data-separator-notes="^Note:"
+        ></section>
+      </div>
+    </div>
+    <script type="module">
+      import Reveal from "./lib/reveal.esm.js";
+      import Markdown from "./lib/markdown.esm.js";
+      import Highlight from "./lib/highlight.esm.js";
+
+      Reveal.initialize({
+        plugins: [Markdown, Highlight],
+        hash: true,
+        transition: "fade",
+        controls: false,
+        slideNumber: "c/t",
+      });
+    </script>
+  </body>
+</html>
