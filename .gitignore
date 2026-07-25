@@ -11,7 +11,9 @@ target/
 !.env.example
 # Local fork deployments are regenerated on every `nix run .#dev`; the public
 # Base Sepolia record is tracked (it is what the subgraph indexes).
-deployments/local.json
+# Anchored: a pattern with an inner slash matches from the repo root only, so
+# plain `deployments/local.json` would silently miss this path.
+contracts/deployments/local.json
 app/public/local.json
 contracts/broadcast/
 contracts/cache/

@@ -36,6 +36,12 @@ contract InventoryBranchTest is AquaSwapVMTest {
 
     uint256 internal constant TRADE = 100e18;
 
+    /// The target split used by the leg-selection cases. Deliberately NOT 1:1,
+    /// so that mixing up target0 and target1 changes the answer: this book
+    /// wants a quarter of its value in the low-address token.
+    uint128 internal constant TARGET_0 = 1000e18;
+    uint128 internal constant TARGET_1 = 3000e18;
+
     function _deployRouter() internal override returns (SwapVM) {
         return new BacalhauRouter(address(aqua), address(0), address(this), "SwapVM", "1.0.0");
     }
@@ -215,10 +221,10 @@ contract InventoryBranchTest is AquaSwapVMTest {
 
     // ============ leg selection ============
 
-    /// 1500:500 against a 1:1 target -> 1500*1000 > 500*1000 -> jump taken.
+    /// 1500:500 against a 1:3 target -> 1500*3000 > 500*1000 -> jump taken.
     function test_InventoryAboveTargetSplit_PricesOnJumpTargetLeg_AndSettles() public {
         (ISwapVM.Order memory order, bytes32 strategyHash) =
-            _ship(_feeSelectorProgram(1000e18, 1000e18, 1), 1500e18, 500e18);
+            _ship(_feeSelectorProgram(TARGET_0, TARGET_1, 1), 1500e18, 500e18);
 
         uint256 quoted = _quoteExactIn(order, true, TRADE);
         assertEq(quoted, _feeXycOut(TRADE, FEE_CHEAP, 1500e18, 500e18), "must price on the cheap jump-target leg");
@@ -242,21 +248,21 @@ contract InventoryBranchTest is AquaSwapVMTest {
         assertEq(balance1, 500e18 - amountOut, "strategy paid out amountOut");
     }
 
-    /// Mirror inventory, 500:1500 -> predicate false -> fallthrough leg prices.
+    /// 200:1800 against the same 1:3 target -> 200*3000 < 1800*1000 -> no jump.
     function test_InventoryBelowTargetSplit_PricesOnFallthroughLeg_AndSettles() public {
-        (ISwapVM.Order memory order, ) = _ship(_feeSelectorProgram(1000e18, 1000e18, 2), 500e18, 1500e18);
+        (ISwapVM.Order memory order, ) = _ship(_feeSelectorProgram(TARGET_0, TARGET_1, 2), 200e18, 1800e18);
 
         uint256 quoted = _quoteExactIn(order, true, TRADE);
-        assertEq(quoted, _feeXycOut(TRADE, FEE_DEAR, 500e18, 1500e18), "must price on the dear fallthrough leg");
+        assertEq(quoted, _feeXycOut(TRADE, FEE_DEAR, 200e18, 1800e18), "must price on the dear fallthrough leg");
         assertLt(
             quoted,
-            _feeXycOut(TRADE, FEE_CHEAP, 500e18, 1500e18),
+            _feeXycOut(TRADE, FEE_CHEAP, 200e18, 1800e18),
             "dear leg must be worse than what the jump target's fee would have produced"
         );
 
         SwapProgram memory sp = _sp(true, TRADE, true);
         mintTokenInToTaker(sp);
-        mintTokenOutToMaker(sp, 1500e18);
+        mintTokenOutToMaker(sp, 1800e18);
         (, uint256 amountOut) = swap(sp, order);
         assertEq(amountOut, quoted, "swap must match quote");
     }
@@ -267,7 +273,7 @@ contract InventoryBranchTest is AquaSwapVMTest {
     /// predicate describes the maker's book, not the taker's trade, so every
     /// observation must show the cheap (jump target) fee.
     function test_AboveTarget_EveryTradeDirectionTakesTheJumpTargetLeg() public {
-        (ISwapVM.Order memory order, ) = _ship(_feeSelectorProgram(1000e18, 1000e18, 3), 1500e18, 500e18);
+        (ISwapVM.Order memory order, ) = _ship(_feeSelectorProgram(TARGET_0, TARGET_1, 3), 1500e18, 500e18);
 
         uint256 sellingToken0 = _quoteExactIn(order, true, TRADE);
         uint256 sellingToken1 = _quoteExactIn(order, false, TRADE);
@@ -285,19 +291,19 @@ contract InventoryBranchTest is AquaSwapVMTest {
     /// Same claim on the other side of the predicate: a below-target book must
     /// fall through for every direction, never only for one of them.
     function test_BelowTarget_EveryTradeDirectionTakesTheFallthroughLeg() public {
-        (ISwapVM.Order memory order, ) = _ship(_feeSelectorProgram(1000e18, 1000e18, 4), 500e18, 1500e18);
+        (ISwapVM.Order memory order, ) = _ship(_feeSelectorProgram(TARGET_0, TARGET_1, 4), 200e18, 1800e18);
 
         uint256 sellingToken0 = _quoteExactIn(order, true, TRADE);
         uint256 sellingToken1 = _quoteExactIn(order, false, TRADE);
         uint256 buyingToken1 = _quoteExactOut(order, true, TRADE);
 
-        assertEq(sellingToken0, _feeXycOut(TRADE, FEE_DEAR, 500e18, 1500e18), "token0 -> token1 took the dear leg");
-        assertEq(sellingToken1, _feeXycOut(TRADE, FEE_DEAR, 1500e18, 500e18), "token1 -> token0 took the dear leg");
-        assertEq(buyingToken1, _feeXycIn(TRADE, FEE_DEAR, 500e18, 1500e18), "exact-out took the dear leg");
+        assertEq(sellingToken0, _feeXycOut(TRADE, FEE_DEAR, 200e18, 1800e18), "token0 -> token1 took the dear leg");
+        assertEq(sellingToken1, _feeXycOut(TRADE, FEE_DEAR, 1800e18, 200e18), "token1 -> token0 took the dear leg");
+        assertEq(buyingToken1, _feeXycIn(TRADE, FEE_DEAR, 200e18, 1800e18), "exact-out took the dear leg");
 
-        assertLt(sellingToken0, _feeXycOut(TRADE, FEE_CHEAP, 500e18, 1500e18), "token0 -> token1 was not the cheap leg");
-        assertLt(sellingToken1, _feeXycOut(TRADE, FEE_CHEAP, 1500e18, 500e18), "token1 -> token0 was not the cheap leg");
-        assertGt(buyingToken1, _feeXycIn(TRADE, FEE_CHEAP, 500e18, 1500e18), "exact-out was not the cheap leg");
+        assertLt(sellingToken0, _feeXycOut(TRADE, FEE_CHEAP, 200e18, 1800e18), "token0 -> token1 was not the cheap leg");
+        assertLt(sellingToken1, _feeXycOut(TRADE, FEE_CHEAP, 1800e18, 200e18), "token1 -> token0 was not the cheap leg");
+        assertGt(buyingToken1, _feeXycIn(TRADE, FEE_CHEAP, 200e18, 1800e18), "exact-out was not the cheap leg");
     }
 
     // ============ boundary: strictly greater ============
@@ -332,17 +338,17 @@ contract InventoryBranchTest is AquaSwapVMTest {
     /// book must fall straight into the next instruction and never touch it.
     function test_PredicateFalse_FallsThroughAndNeverExecutesTheJumpTarget() public {
         bytes memory program = _twoLegProgram(
-            1000e18,
-            1000e18,
+            TARGET_0,
+            TARGET_1,
             bytes.concat(_poisonLeg(), _feeLeg(FEE_CHEAP)),
             _feeLeg(FEE_DEAR),
             20
         );
-        (ISwapVM.Order memory order, ) = _ship(program, 500e18, 1500e18);
+        (ISwapVM.Order memory order, ) = _ship(program, 200e18, 1800e18);
 
         assertEq(
             _quoteExactIn(order, true, TRADE),
-            _feeXycOut(TRADE, FEE_DEAR, 500e18, 1500e18),
+            _feeXycOut(TRADE, FEE_DEAR, 200e18, 1800e18),
             "fallthrough leg priced the trade and the jump target never ran"
         );
     }
@@ -351,8 +357,8 @@ contract InventoryBranchTest is AquaSwapVMTest {
     /// over every instruction between the branch and its target.
     function test_PredicateTrue_JumpsOverTheFallthroughLegWithoutExecutingIt() public {
         bytes memory program = _twoLegProgram(
-            1000e18,
-            1000e18,
+            TARGET_0,
+            TARGET_1,
             _feeLeg(FEE_CHEAP),
             bytes.concat(_poisonLeg(), _feeLeg(FEE_DEAR)),
             21
@@ -410,15 +416,17 @@ contract InventoryBranchTest is AquaSwapVMTest {
     function test_BranchAndSkew_BothDispatchInOneProgram() public {
         Program memory p = ProgramBuilder.init(_opcodes());
         bytes memory plainLeg = p.build(XYCSwap._xycSwapXD);
+        // The skew carries its own, differently shaped target blob (36 bytes vs
+        // the branch's 34), so a swapped opcode table cannot parse either one.
         bytes memory skewedLeg = bytes.concat(_skewIns(1000e18, 1000e18), plainLeg);
 
         (ISwapVM.Order memory above, ) =
-            _ship(_twoLegProgram(1000e18, 1000e18, skewedLeg, plainLeg, 50), 1500e18, 500e18);
+            _ship(_twoLegProgram(TARGET_0, TARGET_1, skewedLeg, plainLeg, 50), 1500e18, 500e18);
         (ISwapVM.Order memory below, ) =
-            _ship(_twoLegProgram(1000e18, 1000e18, skewedLeg, plainLeg, 51), 500e18, 1500e18);
+            _ship(_twoLegProgram(TARGET_0, TARGET_1, skewedLeg, plainLeg, 51), 200e18, 1800e18);
 
-        // Above target, selling token0 deepens the drift: drift is 50%, so the
-        // skew is MAX_SKEW/2 = 2.5% and it shrinks the virtual balanceOut.
+        // Above target, selling token0 deepens the drift against the skew's own
+        // 1:1 target: drift is 50%, so skew = MAX_SKEW/2 = 2.5% off balanceOut.
         uint256 skew = uint256(MAX_SKEW) / 2;
         uint256 shrunkBalanceOut = 500e18 * (BPS - skew) / BPS;
 
@@ -428,7 +436,7 @@ contract InventoryBranchTest is AquaSwapVMTest {
 
         assertEq(
             _quoteExactIn(below, true, TRADE),
-            _xycOut(TRADE, 500e18, 1500e18),
+            _xycOut(TRADE, 200e18, 1800e18),
             "fallthrough leg is plain XYC: the skew was branched around"
         );
     }
