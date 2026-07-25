@@ -1,0 +1,11 @@
+{
+  "aqua": "0xE5Cf2ec690BeE8b59cB8340f469ecfB2f0De98bD",
+  "chainId": 84532,
+  "deployBlock": 44584712,
+  "maker": "0x4fB5C90d3A828067aE07e134eA82ad14DAD50d58",
+  "router": "0xF9b0AfdDad9D249Eb22e69b15df2a4E8C1e99ABC",
+  "seedStrategyHash": "0xcbfb5efbb19eaf26c8cdbbeadea70aca93829ac4b9f89c001be40c5b4c6395f7",
+  "usdc": "0xB6Ec46C767B71a5AA4b51bad4A40827560D63e55",
+  "usdcDecimals": 6,
+  "weth": "0x0F599727F37D4Fc8AB5dBD3aFe86c3EbF4A892f7"
+}
