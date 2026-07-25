@@ -86,7 +86,9 @@ Uniswap. Three sponsors: 1inch (core), The Graph (observability), Uniswap
 ## Keys / secrets (all gitignored)
 
 `app/.env.local`:
-- `VITE_UNISWAP_API_KEY` — Uniswap Developer Platform, working.
+- `UNISWAP_API_KEY` — Uniswap Developer Platform, working. Read by the
+  `/uniswap` proxy, not by the bundle; mirrored as a Cloudflare Pages secret
+  for the public deploy.
 - `VITE_GRAPH_SUBGRAPH_URL` — Studio query endpoint the dashboard polls.
 - `VITE_GRAPH_API_KEY` — gateway key, for a published subgraph (unused while
   we query Studio directly).

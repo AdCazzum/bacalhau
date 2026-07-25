@@ -6,9 +6,11 @@ file instead of debating.
 ## Assumptions (PoC posture)
 
 - **This is a proof of concept.** No hardening, no backend: the app talks
-  directly to the chain, the indexer and the market API from the browser.
-  API keys live client-side; acceptable for a hackathon build, noted as such
-  in the README. Revisit only if something breaks because of it.
+  directly to the chain and the indexer from the browser, and the Graph key
+  ships client-side — acceptable for a hackathon build, noted as such in the
+  README. The one exception is the Uniswap key: the public Cloudflare Pages
+  deployment would expose it to anyone, so market API calls go through a
+  same-origin `/uniswap` proxy that attaches it server-side.
 - **Demo environment:** local fork for everything shown live (shipping,
   swaps, rebalance). The indexer additionally tracks the real chain (Base) —
   where we generate a handful of real transactions — because the Graph track
