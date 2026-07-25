@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package bacalhau.v1;
+
+// A batch of Aqua protocol events decoded from a range of blocks.
+message Events {
+  repeated Shipped shipped = 1;
+  repeated Docked docked = 2;
+  repeated Pulled pulled = 3;
+  repeated Pushed pushed = 4;
+}
+
+// Common provenance fields for every event.
+message Meta {
+  uint64 block_number = 1;
+  uint64 block_timestamp = 2;
+  string tx_hash = 3;
+  uint32 log_index = 4;
+}
+
+// A maker shipped (activated) a strategy on an app.
+message Shipped {
+  Meta meta = 1;
+  string maker = 2;
+  string app = 3;
+  string strategy_hash = 4;
+  string strategy = 5; // hex-encoded program bytes
+}
+
+// A maker docked (deactivated) a strategy.
+message Docked {
+  Meta meta = 1;
+  string maker = 2;
+  string app = 3;
+  string strategy_hash = 4;
+}
+
+// Tokens pulled from the maker into a swap (taker receives).
+message Pulled {
+  Meta meta = 1;
+  string maker = 2;
+  string app = 3;
+  string strategy_hash = 4;
+  string token = 5;
+  string amount = 6; // uint256 as decimal string
+}
+
+// Tokens pushed to the maker from a swap (taker pays).
+message Pushed {
+  Meta meta = 1;
+  string maker = 2;
+  string app = 3;
+  string strategy_hash = 4;
+  string token = 5;
+  string amount = 6; // uint256 as decimal string
+}

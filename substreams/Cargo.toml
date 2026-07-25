@@ -1,0 +1,25 @@
+[package]
+name = "bacalhau-substreams"
+version = "0.1.0"
+edition = "2021"
+description = "Substreams module decoding 1inch Aqua protocol events"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+substreams = "0.6"
+substreams-ethereum = "0.10"
+prost = "0.13"
+hex = "0.4"
+ethabi = "17.0"
+
+[build-dependencies]
+substreams-ethereum = "0.10"
+anyhow = "1"
+prost-build = "0.13"
+
+[profile.release]
+lto = true
+opt-level = "s"
+strip = "debuginfo"

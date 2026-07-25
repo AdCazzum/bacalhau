@@ -1,0 +1,32 @@
+specVersion: v0.1.0
+package:
+  name: bacalhau_aqua
+  version: v0.1.0
+
+protobuf:
+  files:
+    - bacalhau/v1/aqua.proto
+  importPaths:
+    - ./proto
+
+binaries:
+  default:
+    type: wasm/rust-v1
+    file: ./target/wasm32-unknown-unknown/release/bacalhau_substreams.wasm
+
+network: base-sepolia
+
+# The Aqua contract address on Base Sepolia is injected via the map_events
+# param (set once the SepoliaEnv deploy runs). The module filters logs to it.
+params:
+  map_events: "aqua=0x0000000000000000000000000000000000000000"
+
+modules:
+  - name: map_events
+    kind: map
+    initialBlock: 0
+    inputs:
+      - params: string
+      - source: sf.ethereum.type.v2.Block
+    output:
+      type: proto:bacalhau.v1.Events
