@@ -1,4 +1,4 @@
-# Bacalhau — Architecture Spec
+# QilinSwap — Architecture Spec
 
 Technical companion to specs 01–08. Sources of truth: `swap-vm/docs/PROGRAMS.md`
 and the SwapVM/Aqua repos (verified 2026-07-24).

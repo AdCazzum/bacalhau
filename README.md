@@ -1,4 +1,4 @@
-# Bacalhau
+# QilinSwap
 
 Compose your own market-making strategy from visual blocks, ship it from your
 wallet, and watch it live — no code, no deployed contracts.

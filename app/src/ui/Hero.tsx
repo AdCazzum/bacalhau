@@ -53,7 +53,7 @@ export function Hero() {
       />
 
       <div className="hero-title" style={{ opacity: 1 - gone * 1.6 }}>
-        <h1>Bacalhau</h1>
+        <h1>QilinSwap</h1>
         <p>
           compose <span className="pk">·</span> ship <span className="pk">·</span> observe
         </p>

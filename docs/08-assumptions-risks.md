@@ -1,4 +1,4 @@
-# Bacalhau — Assumptions, Risks & Cut Plan
+# QilinSwap — Assumptions, Risks & Cut Plan
 
 Decided cold, before the weekend. When time pressure hits, we execute this
 file instead of debating.

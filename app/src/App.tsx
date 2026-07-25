@@ -16,7 +16,7 @@ export function App() {
     <div className="app">
       <Hero />
       <header className="topbar">
-        <h1>Bacalhau</h1>
+        <h1>QilinSwap</h1>
         <nav>
           <button
             className={view === "canvas" ? "tab active" : "tab"}

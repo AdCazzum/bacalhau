@@ -1,4 +1,4 @@
-# Bacalhau — Hackathon Constraints & Sponsor Mapping
+# QilinSwap — Hackathon Constraints & Sponsor Mapping
 
 The product is defined functionally in 01–03. This file pins the *non-negotiable*
 external constraints: which sponsor track each feature serves and what the

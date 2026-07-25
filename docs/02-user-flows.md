@@ -1,4 +1,4 @@
-# Bacalhau — Core User Flows
+# QilinSwap — Core User Flows
 
 Functional description of what the user does and sees. No implementation detail.
 

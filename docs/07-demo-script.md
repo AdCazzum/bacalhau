@@ -1,4 +1,4 @@
-# Bacalhau — Demo Script (video ≤ 4 min, live pitch 3 min)
+# QilinSwap — Demo Script (video ≤ 4 min, live pitch 3 min)
 
 One script serves both the recorded video and the live judging table. Every
 beat names what is on screen and what is said. No beat depends on luck: all
@@ -68,7 +68,7 @@ Screen: the "Indexed by The Graph" panel, then a quick pan over the README.
 Line: "Aqua had no indexer, so we built one: a reusable Substreams module and a
 subgraph over the same events, both live. Strategies compile to 1inch SwapVM
 programs with two instructions of our own, market truth comes from the Uniswap
-API, and observability from The Graph. Bacalhau: liquidity strategies for people
+API, and observability from The Graph. QilinSwap: liquidity strategies for people
 who don't write Solidity."
 
 ## Judge Q&A prep (live table only)

@@ -1,4 +1,4 @@
-# Bacalhau — Block Catalog
+# QilinSwap — Block Catalog
 
 The blocks users can compose on the canvas. Each block maps 1:1 to one
 strategy instruction; this file defines the *user-facing* contract: name,

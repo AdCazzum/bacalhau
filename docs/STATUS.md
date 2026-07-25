@@ -1,11 +1,14 @@
-# Bacalhau — Build Status
+# QilinSwap — Build Status
 
 Anchor for resuming work. Code + commits on disk are the source of truth;
 this summarizes where we are.
 
-Project = "Bacalhau" (codename). Product in specs is "Aqua Studio". Repo
-remote: git@github.com:AdCazzum/bacalhau.git (commits are NOT pushed by the
-agent — the user pushes manually).
+Product name = "QilinSwap" (user-facing: app, README, docs, pitch).
+"Bacalhau" survives as the codename in identifiers we do not want to churn:
+repo, package/flake names, `BacalhauRouter.sol` (already deployed on Base
+Sepolia), and the golden-vector salt. Repo remote:
+git@github.com:AdCazzum/bacalhau.git (commits are NOT pushed by the agent —
+the user pushes manually).
 
 ## One-liner
 

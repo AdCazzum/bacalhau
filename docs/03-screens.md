@@ -1,4 +1,4 @@
-# Bacalhau — Screens
+# QilinSwap — Screens
 
 Layout and behavior of each screen. Visual language: dark, "ocean" palette
 (deep blues, aqua accents), generous motion on live data (pulses, ripples) —

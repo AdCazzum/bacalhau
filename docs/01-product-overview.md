@@ -1,4 +1,4 @@
-# Bacalhau — Product Overview
+# QilinSwap — Product Overview
 
 > One-liner: **compose your own market-making strategy from visual blocks, ship it
 > from your wallet, and watch it live — no code, no deployed contracts.**
@@ -15,7 +15,7 @@ it, and no way to see what it is doing after.
 
 ## Solution
 
-Bacalhau is a visual workspace for liquidity strategies, in three acts:
+QilinSwap is a visual workspace for liquidity strategies, in three acts:
 
 1. **Compose** — build a strategy by chaining blocks (pricing, fees, time
    limits, auctions...) on a canvas. The app shows, live, the price curve the

@@ -2,7 +2,7 @@
 
 Written for the Uniswap Developer Feedback Form (ETHGlobal Lisbon 2026).
 
-**What we built:** Bacalhau, a visual builder for 1inch Aqua/SwapVM
+**What we built:** QilinSwap, a visual builder for 1inch Aqua/SwapVM
 market-making strategies. The Uniswap Trading API is the market-truth layer: it
 supplies the reference price the strategy is drawn against, and it quotes and
 routes the corrective swap when a maker's inventory drifts.

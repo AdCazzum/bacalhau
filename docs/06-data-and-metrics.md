@@ -1,4 +1,4 @@
-# Bacalhau — Data Model & Metrics
+# QilinSwap — Data Model & Metrics
 
 Precise definitions for every number the UI shows. If a metric is not defined
 here, it does not appear on screen. All quantities are per-strategy unless
