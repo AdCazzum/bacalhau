@@ -120,8 +120,15 @@ export function Copilot({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ messages, context: appState(demo, alloc, marketPrice) }),
     });
+    // The worker always answers JSON; anything else (Cloudflare 5xx page,
+    // gateway timeout) would make res.json() throw "Unexpected token <"
+    // instead of showing what actually failed.
+    const isJson = res.headers.get("content-type")?.includes("application/json") ?? false;
+    if (!res.ok || !isJson) {
+      const payload = isJson ? await res.json().catch(() => null) : null;
+      throw new Error(typeof payload?.error === "string" ? payload.error : `HTTP ${res.status}`);
+    }
     const body = await res.json();
-    if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
 
     const answer: Turn = { role: "assistant", content: body.reply ?? "", trace: body.trace ?? [] };
     if (!body.proposal) return answer;

@@ -164,8 +164,10 @@ class McpSession {
     this.endpoint = null;
     this.reader = null;
     this.buffer = "";
-    /** id -> resolve, for results that arrive out of order on one stream. */
+    /** id -> { resolve, reject }, for results that arrive out of order on one stream. */
     this.pending = new Map();
+    /** Set by fail(): the stream died, so no reply can ever arrive again. */
+    this.dead = null;
   }
 
   async open() {
@@ -177,54 +179,88 @@ class McpSession {
     this.decoder = new TextDecoder();
     this.pump();
     this.endpoint = await this.awaitEndpoint();
-    await this.send({
-      jsonrpc: "2.0",
-      id: 1,
-      method: "initialize",
-      params: {
-        protocolVersion: "2024-11-05",
-        capabilities: {},
-        clientInfo: { name: "qilinswap-copilot", version: "1.0" },
-      },
-    });
-    await this.result(1);
+    // Register the waiter before POSTing: the reply arrives on the SSE
+    // stream and can beat the POST's 202, in which case pump() would find
+    // no one to wake and drop it.
+    const ready = this.result(1);
+    try {
+      await this.send({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "initialize",
+        params: {
+          protocolVersion: "2024-11-05",
+          capabilities: {},
+          clientInfo: { name: "qilinswap-copilot", version: "1.0" },
+        },
+      });
+    } catch (e) {
+      this.pending.delete(1);
+      throw e;
+    }
+    await ready;
     await this.send({ jsonrpc: "2.0", method: "notifications/initialized", params: {} });
   }
 
-  /** Reads frames forever; each `data:` line is one JSON-RPC message. */
+  /** Reads frames forever; each frame's `data:` lines form one JSON-RPC message. */
   async pump() {
-    for (;;) {
-      const { value, done } = await this.reader.read();
-      if (done) return;
-      this.buffer += this.decoder.decode(value, { stream: true });
-      let split;
-      while ((split = this.buffer.indexOf("\n\n")) !== -1) {
-        const frame = this.buffer.slice(0, split);
-        this.buffer = this.buffer.slice(split + 2);
-        const data = frame
-          .split("\n")
-          .filter((line) => line.startsWith("data:"))
-          .map((line) => line.slice(5).trim())
-          .join("");
-        if (data === "") continue;
-        if (frame.includes("event: endpoint")) {
-          this.endpointResolve?.(data);
-          continue;
-        }
-        try {
-          const message = JSON.parse(data);
-          this.pending.get(message.id)?.(message);
-          this.pending.delete(message.id);
-        } catch {
-          // a keep-alive or a frame we do not model: nothing to do
+    try {
+      for (;;) {
+        const { value, done } = await this.reader.read();
+        if (done) break;
+        this.buffer += this.decoder.decode(value, { stream: true });
+        let match;
+        // Frames end at a blank line; servers may frame with LF or CRLF. A
+        // partial delimiter at the buffer's tail cannot match (both newlines
+        // are required), so splitting is safe across chunk boundaries.
+        while ((match = this.buffer.match(/\r?\n\r?\n/))) {
+          const frame = this.buffer.slice(0, match.index);
+          this.buffer = this.buffer.slice(match.index + match[0].length);
+          const lines = frame.split(/\r?\n/);
+          // Multi-line data is one payload the server split across lines:
+          // rejoin with the newlines SSE framing removed, minus the one
+          // optional space after each "data:".
+          const data = lines
+            .filter((line) => line.startsWith("data:"))
+            .map((line) => line.slice(5).replace(/^ /, ""))
+            .join("\n");
+          if (data === "") continue;
+          if (lines.some((line) => /^event: ?endpoint\s*$/.test(line))) {
+            this.endpointResolve?.(data.trim());
+            continue;
+          }
+          try {
+            const message = JSON.parse(data);
+            const waiter = this.pending.get(message.id);
+            if (waiter) {
+              this.pending.delete(message.id);
+              waiter.resolve(message);
+            }
+          } catch {
+            // a keep-alive or a frame we do not model: nothing to do
+          }
         }
       }
+      this.fail(new Error("MCP stream closed"));
+    } catch (e) {
+      // A dead stream can never answer: fail in-flight calls now instead of
+      // letting each one ride its 45s timeout.
+      this.fail(e instanceof Error ? e : new Error(String(e)));
     }
+  }
+
+  /** Reject every in-flight waiter and mark the session unusable. */
+  fail(err) {
+    this.dead = err;
+    this.endpointReject?.(err);
+    for (const { reject } of this.pending.values()) reject(err);
+    this.pending.clear();
   }
 
   awaitEndpoint() {
     return new Promise((resolve, reject) => {
       this.endpointResolve = resolve;
+      this.endpointReject = reject;
       setTimeout(() => reject(new Error("MCP did not announce an endpoint")), 10000);
     });
   }
@@ -241,7 +277,7 @@ class McpSession {
 
   result(id) {
     return new Promise((resolve, reject) => {
-      this.pending.set(id, resolve);
+      this.pending.set(id, { resolve, reject });
       setTimeout(() => {
         if (!this.pending.delete(id)) return;
         reject(new Error(`MCP call ${id} timed out`));
@@ -250,9 +286,19 @@ class McpSession {
   }
 
   async call(name, args) {
+    if (this.dead) throw this.dead;
     const id = this.nextId();
-    await this.send({ jsonrpc: "2.0", id, method: "tools/call", params: { name, arguments: args } });
-    const message = await this.result(id);
+    // Register the waiter before POSTing: the reply arrives on the SSE
+    // stream and can beat the POST's 202, in which case pump() would find
+    // no one to wake and drop it.
+    const reply = this.result(id);
+    try {
+      await this.send({ jsonrpc: "2.0", id, method: "tools/call", params: { name, arguments: args } });
+    } catch (e) {
+      this.pending.delete(id);
+      throw e;
+    }
+    const message = await reply;
     if (message.error) return { error: message.error.message ?? "MCP error" };
     // Tool results are content blocks; the text block is the payload.
     const text = (message.result?.content ?? []).map((c) => c.text ?? "").join("\n");
@@ -274,9 +320,23 @@ async function mcpCall(state, env, name, args) {
   const key = env.GRAPH_API_KEY;
   if (!key) return { error: "GRAPH_API_KEY is not configured" };
   try {
+    // A session whose stream died mid-request cannot answer again: drop it
+    // so this call opens a fresh one instead of riding timeouts.
+    if (state.mcp?.dead) {
+      state.mcp.close();
+      state.mcp = null;
+    }
     if (!state.mcp) {
-      state.mcp = new McpSession(env.GRAPH_MCP_URL || "https://subgraphs.mcp.thegraph.com", key);
-      await state.mcp.open();
+      const session = new McpSession(env.GRAPH_MCP_URL || "https://subgraphs.mcp.thegraph.com", key);
+      try {
+        await session.open();
+      } catch (e) {
+        session.close();
+        throw e;
+      }
+      // Cache only after the handshake succeeds: a session that failed to
+      // open never reaches `state`, so the next tool call retries fresh.
+      state.mcp = session;
     }
     return await state.mcp.call(name, args);
   } catch (e) {

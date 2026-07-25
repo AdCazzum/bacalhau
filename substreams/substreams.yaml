@@ -37,10 +37,38 @@ modules:
     output:
       type: proto:bacalhau.v1.Events
 
+  - name: store_status
+    kind: store
+    initialBlock: 44584712
+    updatePolicy: set
+    valueType: string
+    inputs:
+      - map: map_events
+
+  - name: store_counters
+    kind: store
+    initialBlock: 44584712
+    updatePolicy: add
+    valueType: int64
+    inputs:
+      - map: map_events
+      - store: store_status
+        mode: deltas
+
+  - name: store_volumes
+    kind: store
+    initialBlock: 44584712
+    updatePolicy: add
+    valueType: bigint
+    inputs:
+      - map: map_events
+
   - name: graph_out
     kind: map
     initialBlock: 44584712
     inputs:
       - map: map_events
+      - store: store_counters
+      - store: store_volumes
     output:
       type: proto:sf.substreams.sink.entity.v1.EntityChanges

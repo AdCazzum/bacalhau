@@ -1,10 +1,10 @@
 /**
  * Subgraph client (docs/04: The Graph is the observability layer).
  *
- * The dashboard's primary source on a public chain is the substreams-powered
- * subgraph: it carries aggregates (fill counts, cumulative volume) that the
- * app would otherwise have to fold from raw logs, and it is not bound by the
- * RPC's eth_getLogs range cap.
+ * The dashboard's primary source on a public chain is the subgraph (a classic
+ * EVM-datasource deployment, `subgraph/`): it carries aggregates (fill counts,
+ * cumulative volume) that the app would otherwise have to fold from raw logs,
+ * and it is not bound by the RPC's eth_getLogs range cap.
  *
  * The local-fork demo keeps reading logs directly (no indexer can see anvil),
  * so this module is additive: `hasSubgraph()` gates the UI.
