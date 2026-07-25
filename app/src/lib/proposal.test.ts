@@ -293,11 +293,12 @@ describe("numeric parameters", () => {
     expect(Math.abs(feeBps - 2.6)).toBeLessThan(1);
   });
 
-  // `""` is missing from this table on purpose: `Number("")` is 0, so a blank
-  // fee currently parses as a zero-fee node that validate() then waves through.
-  // Reported rather than pinned — a test here would encode the hole.
   it.each([
     { name: "prose", value: "high" },
+    // `Number("")` is 0: without asNumber's blank-string guard these two would
+    // silently parse as zero-fee nodes that validate() then waves through.
+    { name: "a blank string", value: "" },
+    { name: "whitespace only", value: "   " },
     { name: "null", value: null },
     { name: "undefined", value: undefined },
     { name: "an object", value: { bps: 30 } },

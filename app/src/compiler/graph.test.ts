@@ -679,6 +679,21 @@ const REJECTED: { name: string; graph: StrategyGraph; nodeId: string | null; mat
     match: /only continue to one node/i,
   },
   {
+    name: "a port-tagged edge leaving a step node",
+    graph: {
+      nodes: [
+        { id: "fee", kind: "flatFee", feeBps: 1_000 },
+        { id: "swap", kind: "constantProduct" },
+      ],
+      // reviveEdge accepts a port on any edge, so an LLM proposal can reach
+      // this shape; compile() used to wire it as a half-formed branch and die
+      // with an internal error instead of the GraphError validate() promises.
+      edges: [{ from: "fee", to: "swap", port: "then" }],
+    },
+    nodeId: "fee",
+    match: /only branches label their edges/i,
+  },
+  {
     name: "an edge pointing at a node that does not exist",
     graph: {
       nodes: [{ id: "swap", kind: "constantProduct" }],
@@ -778,6 +793,11 @@ const OUT_OF_BOUNDS: { name: string; node: GraphNode; match: RegExp }[] = [
     match: /targets must be positive/i,
   },
   {
+    name: "a skew target past uint128",
+    node: { id: "n", kind: "inventorySkew", target0: 1n << 128n, target1: 1n, maxSkewBps: 1_000 },
+    match: /fit uint128/i,
+  },
+  {
     name: "a zero lower price bound",
     node: { id: "n", kind: "priceRange", sqrtPriceMinX18: 0n, sqrtPriceMaxX18: 10n },
     match: /lower price bound must be positive/i,
@@ -791,6 +811,11 @@ const OUT_OF_BOUNDS: { name: string; node: GraphNode; match: RegExp }[] = [
     name: "a degenerate (empty) price range",
     node: { id: "n", kind: "priceRange", sqrtPriceMinX18: 10n, sqrtPriceMaxX18: 10n },
     match: /below the upper/i,
+  },
+  {
+    name: "an upper price bound past uint256",
+    node: { id: "n", kind: "priceRange", sqrtPriceMinX18: 1n, sqrtPriceMaxX18: 1n << 256n },
+    match: /fit uint256/i,
   },
   {
     name: "a decay period of zero",
@@ -817,6 +842,11 @@ const OUT_OF_BOUNDS: { name: string; node: GraphNode; match: RegExp }[] = [
     name: "a negative minimum balance",
     node: { id: "n", kind: "holderGate", token: TOKEN_A, minBalance: -1n },
     match: /minimum balance/i,
+  },
+  {
+    name: "a minimum balance past uint256",
+    node: { id: "n", kind: "holderGate", token: TOKEN_A, minBalance: 1n << 256n },
+    match: /fit uint256/i,
   },
 ];
 
@@ -859,12 +889,30 @@ describe("parameter bounds (a value the instruction cannot hold must never reach
     expect(validate(graph).map((e) => e.message)).toContain("branch targets must be positive");
   });
 
+  it("rejects an inventory-branch target past uint128", () => {
+    const graph: StrategyGraph = {
+      nodes: [
+        { id: "inv", kind: "ifInventoryAbove", target0: 1n << 128n, target1: 1n },
+        { id: "swapA", kind: "constantProduct" },
+        { id: "swapB", kind: "constantProduct" },
+      ],
+      edges: [
+        { from: "inv", to: "swapA", port: "then" },
+        { from: "inv", to: "swapB", port: "else" },
+      ],
+    };
+    expect(validate(graph).map((e) => e.message)).toContain("branch targets must fit uint128 (16 bytes)");
+    expect(() => compile(graph, { salt: 1n })).toThrow(GraphError);
+  });
+
   it("accepts the exact upper bound of every capped field", () => {
     const atTheLimit: GraphNode[] = [
       { id: "n", kind: "flatFee", feeBps: BPS },
-      { id: "n", kind: "inventorySkew", target0: 1n, target1: 1n, maxSkewBps: MAX_SKEW_CAP },
+      { id: "n", kind: "inventorySkew", target0: (1n << 128n) - 1n, target1: (1n << 128n) - 1n, maxSkewBps: MAX_SKEW_CAP },
       { id: "n", kind: "flowDecay", periodSeconds: 0xffff },
       { id: "n", kind: "deadline", timestamp: 2 ** 40 - 1 },
+      { id: "n", kind: "priceRange", sqrtPriceMinX18: 1n, sqrtPriceMaxX18: (1n << 256n) - 1n },
+      { id: "n", kind: "holderGate", token: TOKEN_A, minBalance: (1n << 256n) - 1n },
     ];
     for (const node of atTheLimit) {
       expect(validate(beforeSwap(node)).map((e) => e.message), `${node.kind} at its limit`).toEqual([]);

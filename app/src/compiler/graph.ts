@@ -146,6 +146,12 @@ export function validate(graph: StrategyGraph): GraphError[] {
         branches.set(node.id, { then: thenEdge.to, else: elseEdge.to });
       }
     } else {
+      // compile() classifies edges by port, so a ported edge out of a step
+      // would be wired as a half-formed branch; refuse it here instead.
+      const ported = out.find((e) => e.port !== undefined);
+      if (ported) {
+        errors.push(new GraphError(node.id, `a step has no '${ported.port}' port; only branches label their edges`));
+      }
       const only = out[0];
       if (out.length > 1) errors.push(new GraphError(node.id, "a step can only continue to one node"));
       else if (only) next.set(node.id, only.to);
@@ -287,6 +293,14 @@ function swapOrderErrors(
   return errors;
 }
 
+/**
+ * Encoded argument widths. `emit()` writes targets as uint128 and 32-byte
+ * amounts as uint256; anything at or past the width would make the encoder
+ * throw a plain Error instead of the GraphError validate() promises.
+ */
+const UINT128 = 1n << 128n;
+const UINT256 = 1n << 256n;
+
 function paramErrors(node: GraphNode, index: number): GraphError[] {
   const e: GraphError[] = [];
   const bad = (m: string) => e.push(new GraphError(node.id, m));
@@ -298,12 +312,14 @@ function paramErrors(node: GraphNode, index: number): GraphError[] {
       break;
     case "inventorySkew":
       if (node.target0 <= 0n || node.target1 <= 0n) bad("skew targets must be positive");
+      if (node.target0 >= UINT128 || node.target1 >= UINT128) bad("skew targets must fit uint128 (16 bytes)");
       if (node.maxSkewBps < 0 || node.maxSkewBps > MAX_SKEW_CAP) {
         bad(`maxSkew above cap: ${node.maxSkewBps} > ${MAX_SKEW_CAP}`);
       }
       break;
     case "ifInventoryAbove":
       if (node.target0 <= 0n || node.target1 <= 0n) bad("branch targets must be positive");
+      if (node.target0 >= UINT128 || node.target1 >= UINT128) bad("branch targets must fit uint128 (16 bytes)");
       break;
     case "deadline":
       if (!Number.isInteger(node.timestamp) || node.timestamp <= 0 || node.timestamp >= 2 ** 40) {
@@ -313,6 +329,8 @@ function paramErrors(node: GraphNode, index: number): GraphError[] {
     case "priceRange":
       if (node.sqrtPriceMinX18 <= 0n) bad("lower price bound must be positive");
       if (node.sqrtPriceMinX18 >= node.sqrtPriceMaxX18) bad("lower price bound must be below the upper");
+      // min < max, so a max inside uint256 pins min inside it too.
+      if (node.sqrtPriceMaxX18 >= UINT256) bad("upper price bound must fit uint256");
       break;
     case "flowDecay":
       if (!Number.isInteger(node.periodSeconds) || node.periodSeconds <= 0 || node.periodSeconds > 0xffff) {
@@ -322,6 +340,7 @@ function paramErrors(node: GraphNode, index: number): GraphError[] {
     case "holderGate":
       if (!/^0x[0-9a-fA-F]{40}$/.test(node.token)) bad(`invalid token address: ${node.token}`);
       if (node.minBalance < 0n) bad("minimum balance cannot be negative");
+      if (node.minBalance >= UINT256) bad("minimum balance must fit uint256");
       break;
     case "ifDirection":
       if (!/^0x[0-9a-fA-F]{40}$/.test(node.token)) bad(`invalid token address: ${node.token}`);

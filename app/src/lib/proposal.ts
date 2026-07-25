@@ -31,6 +31,11 @@ function asBigInt(value: unknown, field: string): bigint {
 }
 
 function asNumber(value: unknown, field: string): number {
+  // Number("") and Number("   ") are 0: a blank field must read as missing,
+  // not silently become a legal zero-valued node (e.g. a zero-fee strategy).
+  if (typeof value === "string" && value.trim() === "") {
+    throw new ProposalError(`${field} must be a number`);
+  }
   const n = typeof value === "string" ? Number(value) : value;
   if (typeof n !== "number" || !Number.isFinite(n)) throw new ProposalError(`${field} must be a number`);
   return Math.round(n);

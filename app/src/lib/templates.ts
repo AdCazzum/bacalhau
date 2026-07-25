@@ -80,15 +80,20 @@ function targetsForShare(ctx: TemplateContext, wethShare: number): { target0: bi
 }
 
 function bounds(ctx: TemplateContext, spreadPercent: number): { min: bigint; max: bigint } {
-  const price = impliedPrice(ctx);
+  const spread = spreadPercent / 100;
+  let mid = impliedPrice(ctx);
+  // A blanked allocation with no market feed implies no price (and a tiny one
+  // rounds to zero at 6 decimals, which toSqrtPriceX18 refuses): fall back to
+  // 1.0 so the template still loads — the bounds are a starting point to edit.
+  if (!Number.isFinite(mid) || mid * (1 - spread) < 1e-6) mid = 1;
   const base: Token = { address: ctx.weth, decimals: WETH_DECIMALS };
   const quote: Token = { address: ctx.usdc, decimals: USDC_DECIMALS };
-  const lo = price * (1 - spreadPercent / 100);
-  const hi = price * (1 + spreadPercent / 100);
-  return {
-    min: toSqrtPriceX18(lo.toFixed(6), base, quote),
-    max: toSqrtPriceX18(hi.toFixed(6), base, quote),
-  };
+  const lo = toSqrtPriceX18((mid * (1 - spread)).toFixed(6), base, quote);
+  const hi = toSqrtPriceX18((mid * (1 + spread)).toFixed(6), base, quote);
+  // The instruction prices the address-sorted pair (tokenGt per tokenLt): when
+  // WETH sorts above USDC the conversion is a reciprocal, which is decreasing,
+  // so the bound derived from the lower human price is the larger sqrt value.
+  return lo < hi ? { min: lo, max: hi } : { min: hi, max: lo };
 }
 
 /** Straight line through the given node ids. */
