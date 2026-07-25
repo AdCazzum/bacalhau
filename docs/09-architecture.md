@@ -10,9 +10,8 @@ bacalhau/
 ├── flake.nix            # dev environment (foundry, node, rust, protobuf)
 ├── contracts/           # Foundry: custom instruction + fork tests + demo scripts
 ├── app/                 # frontend (canvas, dashboard, compiler)
-├── indexer/
-│   ├── substreams/      # Rust module: Aqua events -> entity changes
-│   └── subgraph/        # substreams-powered subgraph manifest + schema
+├── substreams/          # Rust module: Aqua events -> typed stream + entity changes
+├── subgraph/            # classic EVM-datasource subgraph (manifest, schema, mappings)
 └── docs/                # these specs
 ```
 
@@ -89,15 +88,19 @@ graph (SwapVM's run loop re-reads the program counter after every instruction).
 
 ## Indexer
 
-- Substreams module (Rust): decode Aqua `ship/dock/pull/push` events →
-  entity changes; feeds the subgraph (substreams-powered subgraph — the Graph
-  track's qualifying composition).
+- Substreams module (Rust, `substreams/`): decodes Aqua `ship/dock/pull/push`
+  events into a typed protobuf stream plus a `graph_out` of entity changes.
+  Originally planned as a substreams-powered subgraph, but Subgraph Studio has
+  dropped support for those (see 04), so the shipped shape is the reusable
+  module **plus** a classic EVM-datasource subgraph (`subgraph/`) over the
+  same Aqua events.
 - Schema: entities from 06 (Strategy, Fill) shaped on the standardized
   DEX-AMM convention (Protocol/Pool≈Strategy/Swap≈Fill).
-- Deployed to Subgraph Studio indexing Base (real network); the app reads the
-  fork for actions and Studio for the live dashboard (08 dual-environment).
-- `substreams` CLI: not in nixpkgs — add fetchurl derivation to the flake when
-  this workstream starts (TODO noted in flake.nix).
+- Deployed to Subgraph Studio indexing Base Sepolia (real network); the app
+  reads the fork for actions and Studio for the live dashboard (08
+  dual-environment).
+- `substreams` CLI: not in nixpkgs — pinned as a fetchurl derivation in the
+  flake (`substreamsVersion` in flake.nix).
 
 ## Frontend stack (decided)
 
@@ -115,13 +118,14 @@ graph (SwapVM's run loop re-reads the program counter after every instruction).
 
 - Actions/demo: anvil fork of Base (SwapVM + Aqua deployed; redeploy modified
   SwapVM on the fork for InventorySkew).
-- Indexer: Base mainnet, real transactions we generate (08/R3).
+- Indexer: Base Sepolia (chain 84532, from deploy block 44584712), real
+  transactions we generate (08/R3).
 
 ## Open items
 
 - [ ] Exact `ArgsBuilder` encodings per instruction — read from
       `swap-vm/src/instructions/*` when compiler work starts (encoding detail,
       does not change this map)
-- [ ] Verify Aqua+SwapVM deployment addresses on Base (`config/constants.json`
+- [x] Verify Aqua+SwapVM deployment addresses on Base (`config/constants.json`
       in both repos)
-- [ ] substreams CLI derivation for the flake
+- [x] substreams CLI derivation for the flake

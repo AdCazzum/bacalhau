@@ -4,6 +4,11 @@ Precise definitions for every number the UI shows. If a metric is not defined
 here, it does not appear on screen. All quantities are per-strategy unless
 stated; wallet-level views aggregate over the wallet's strategies.
 
+**What actually shipped** (cut plan in docs/08): Strategy and Fill as defined
+below, live from chain logs on the fork and from the subgraph on Base Sepolia;
+the Draft entity, public pages and auto-rebalance thresholds are the design
+record, and the freshness table states the shipped polling contract.
+
 ## Entities
 
 ### Strategy
@@ -64,10 +69,10 @@ user's machine; no server-side persistence in v1.
 
 | Data | Source of truth | Max staleness on screen |
 |---|---|---|
-| Fills / activity feed | indexer stream | ~2 s from on-chain inclusion |
-| Strategy balances | indexer | same as fills |
-| Market reference price | market API | 5 s (polled), visibly ticking |
-| Quotes in rebalance sheet | market API | 15 s, then forced re-quote |
+| Fills / activity feed | fork: chain logs, polled every 2 s · Sepolia: subgraph, polled every 10 s, backing off to 60 s when rate-limited | ~2 s (fork) / poll interval + indexing lag (Sepolia) |
+| Strategy balances | same source as fills | same as fills |
+| Market reference price | market API | 10 s (polled), age shown next to the value |
+| Quotes in rebalance sheet | market API | 15 s after quoting, then the quote expires: Execute disables and the user previews again (no silent re-quote) |
 | Wallet token balances | chain via wallet connection | on focus + after any action |
 
 Rule: a value that fails to refresh shows its age ("as of 12s ago"), never

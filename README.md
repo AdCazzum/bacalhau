@@ -29,10 +29,13 @@ your own wallet. Funds never move until a taker swaps.
 **None of this is new capability** — a Uniswap v4 hook can do all of it, and
 more. What changes is where the strategy lives. A hook is a contract you write,
 deploy and are responsible for, and its rules bind every LP in the pool. Here
-the strategy is *data*: bytecode interpreted by an already-deployed, audited VM,
+the strategy is *data*: bytecode interpreted by a shared, already-deployed VM,
 authored per-maker, so two makers on the same pair can run opposite strategies
 against liquidity that never leaves their wallets. Changing it is a re-ship, not
-a redeploy.
+a redeploy. (In production that VM is the official audited SwapVM router; this
+demo runs the 1inch track's sanctioned modified-SwapVM redeploy,
+`BacalhauRouter`, which appends two new opcodes to the audited table without
+touching any existing instruction.)
 
 The bet is that the barrier to custom market making was never expressiveness —
 it was having to ship a contract to express anything at all.
@@ -49,6 +52,16 @@ flowchart LR
 
 ## Run it
 
+Clone with submodules — the contracts build needs the official 1inch repos
+under `lib/`:
+
+```bash
+git clone --recursive https://github.com/AdCazzum/qilinswap.git
+cd qilinswap
+```
+
+(Already cloned without them? `git submodule update --init --recursive`.)
+
 One command brings up the whole demo — a Base fork, the deployed contracts with
 a seeded strategy, and the app:
 
@@ -56,7 +69,7 @@ a seeded strategy, and the app:
 nix run .#dev
 ```
 
-Then open <http://localhost:5173>. `q` (or Ctrl-C) stops everything; processes
+Then open <http://localhost:5173>. Ctrl-C (or F10) stops everything; processes
 shut down in reverse dependency order, so nothing is left listening.
 
 It runs three processes, wired by readiness so the app never starts before the
@@ -90,6 +103,11 @@ and only adds credentials (`.github/workflows/deploy.yml`). It reads:
 | `CLOUDFLARE_API_TOKEN`  | wrangler auth (or run `wrangler login` once)      |
 | `CLOUDFLARE_ACCOUNT_ID` | wrangler auth                                     |
 | `UNISWAP_API_KEY`       | pushed as a Pages secret when set; optional       |
+| `LLM_API_KEY`           | copilot LLM key (OpenAI-compatible); without it `/agent` answers 503 |
+| `LLM_BASE_URL`          | chat-completions base URL; defaults to `https://api.openai.com/v1` |
+| `LLM_MODEL`             | model id; defaults to `gpt-4o-mini`               |
+| `GRAPH_API_KEY`         | The Graph gateway key for the copilot's Subgraph MCP session |
+| `GRAPH_SUBGRAPH_URL`    | Studio query endpoint for the copilot's subgraph tool |
 | `CF_PAGES_PROJECT`      | Pages project name, defaults to `bacalhau`        |
 
 The Uniswap Trading API sends no CORS headers and its key must not reach the
@@ -122,7 +140,7 @@ pins that with a program using both custom opcodes at once.
 | What | Where |
 | ---- | ----- |
 | Reference price behind the strategy curve, with a freshness contract | [`app/src/lib/uniswap.ts`](app/src/lib/uniswap.ts) |
-| Rebalance: quote → approve → execute, fee tier parsed from the API's own `routeString` | [`app/src/lib/rebalance.ts`](app/src/lib/rebalance.ts) |
+| Rebalance: quote → approve → execute, fee tier taken from the API's own quoted route | [`app/src/lib/rebalance.ts`](app/src/lib/rebalance.ts) |
 | Same-origin proxy attaching the key server-side | [`app/public/_worker.js`](app/public/_worker.js), [`app/vite.config.ts`](app/vite.config.ts) |
 
 Integration notes, including why execution calls SwapRouter02 directly instead

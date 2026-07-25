@@ -31,5 +31,13 @@ jobs:
           # Pushed to the Pages project as a worker secret, so it stays out of
           # the bundle. Omit it and the previously configured value stands.
           UNISWAP_API_KEY: ${{ secrets.UNISWAP_API_KEY }}
+          # Copilot secrets: the /agent endpoint needs the LLM key server-side
+          # and the Graph credentials for its subgraph + MCP tools. Same rule
+          # as above — omitted values leave the configured secret in place.
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          GRAPH_API_KEY: ${{ secrets.GRAPH_API_KEY }}
+          GRAPH_SUBGRAPH_URL: ${{ secrets.GRAPH_SUBGRAPH_URL }}
           CF_PAGES_PROJECT: bacalhau
         run: nix run .#deploy

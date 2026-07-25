@@ -18,8 +18,10 @@ these.
 
 ### 1inch
 - [x] Official Aqua/SwapVM contracts used as submodules; `BacalhauRouter` is
-      the allowed modified-SwapVM redeploy, adding the custom `InventorySkew`
-      opcode `0x22` (`contracts/src/InventorySkew.sol`)
+      the allowed modified-SwapVM redeploy, appending two custom opcodes:
+      `InventorySkew` `0x22` (`contracts/src/InventorySkew.sol`) and
+      `_jumpIfInventoryAboveXD` `0x23` (`contracts/src/InventoryBranch.sol`),
+      the inventory branch behind the demo's on-chain state flip
 - [x] On-chain token transfers shown in final demo (local Base fork) —
       Flow 6 "Execute test swap"
 - [x] Proper git commit history: progressive commits throughout, no

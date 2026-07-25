@@ -23,8 +23,9 @@ only after the D1 catalog works end to end.
 
 ## Larger features
 
-- Grid trading (needs conditional jumps; N parallel Fixed Rate strategies on
-  shared Aqua balance is a viable approximation already)
+- Grid trading — the conditional jumps it needed now exist (`If Direction`,
+  `If Inventory Above` opcode 0x23); what remains is rung generation and
+  per-rung accounting in the UI
 - CPPI / portfolio insurance (keeper-driven, not instruction-driven)
 - True TWAP / VWAP execution
 - Auto-rebalance as always-on service (needs a persistent backend process)
@@ -33,7 +34,8 @@ only after the D1 catalog works end to end.
 
 ## Stock SwapVM instructions discovered in PROGRAMS.md (free future blocks)
 
-- `XYCConcentrate` — Uniswap v3-style concentrated liquidity (price range)
 - `PeggedSwap` — Curve-style stable-pair curve
-- `Decay` — Mooniswap-style virtual-balance decay (MEV resistance)
 - `Extruction` — external branch selector (multi-strategy best-route)
+
+(`XYCConcentrate` and `Decay` graduated from this list: shipped as the Price
+Range and Flow Decay blocks.)

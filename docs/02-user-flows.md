@@ -2,6 +2,11 @@
 
 Functional description of what the user does and sees. No implementation detail.
 
+**What actually shipped** (cut plan in docs/08): Flows 1, 2 and 6 in full, the
+dashboard and indexed views of Flow 3, manual rebalance from Flow 4, and dock
+from the Dashboard rather than a detail page; strategy detail/public pages and
+auto-rebalance are the design record.
+
 ## Flow 1 — Compose a strategy
 
 **Actor:** maker (LP). **Goal:** design a strategy and understand its behavior

@@ -3,6 +3,11 @@
 > One-liner: **compose your own market-making strategy from visual blocks, ship it
 > from your wallet, and watch it live — no code, no deployed contracts.**
 
+**What actually shipped** (cut plan in docs/08): Canvas, Dashboard (test swap,
+dock, manual rebalance), the Indexed-by-The-Graph panel and the Copilot; the
+strategy detail/public pages and auto-rebalance described below are the design
+record.
+
 ## Problem
 
 Providing liquidity with a custom strategy today means writing, auditing and

@@ -26,10 +26,11 @@ Uniswap. Three sponsors: 1inch (core), The Graph (observability), Uniswap
     tilt). `BacalhauRouter.sol` — modified-SwapVM redeploy with skew appended.
   - Golden tests (template→bytecode parity), 5 skew tests, 11 inventory-branch
     tests. **forge 19/19.**
-  - `app/src/compiler/graph.test.ts` — 89 tests: golden-vector parity, a
-    test-local VM interpreter proving the emitted program runs exactly the nodes
-    the graph model says, a property test over 200 random branchy graphs, and 19
-    rejected unsafe shapes. **vitest 93/93.**
+  - `app/src/compiler/graph.test.ts` — golden-vector parity, a test-local VM
+    interpreter proving the emitted program runs exactly the nodes the graph
+    model says, a property test over 200 random branchy graphs, and rejected
+    unsafe shapes; plus proposal-parser, worker-proxy, naming and ordering
+    suites. **vitest 235/235** across five files.
 - **Strategy graph** — SwapVM is a machine whose instructions rewrite the PC, so
   a strategy is a control-flow graph, not a pipeline:
   - `app/src/compiler/graph.ts` — two-pass assembler. Emits labels only at
@@ -91,17 +92,16 @@ Uniswap. Three sponsors: 1inch (core), The Graph (observability), Uniswap
 
 ## Remaining ❌
 
-1. **`FEEDBACK.md`** (Uniswap qualification) + submit the Developer Feedback
-   Form with its link. Material from the real integration: Permit2's EIP-712
-   path reverting against a pinned fork block, `slippageTolerance` needing a
-   number (a string returns an undiagnostic HTTP 400), no CORS headers so the
-   browser needs a dev proxy, quote working while execute needed a direct
-   router.
-2. **README architecture section** — satisfies two requirements at once:
-   Uniswap wants pointers to the exact integration files, The Graph wants the
-   composability leverage made explicit ("what became easier").
-3. **Demo video** ≤3:50 + rehearsal. `docs/07-demo-script.md` is stale: written
-   before the Graph pillar, Base Sepolia and `nix run .#dev` existed.
+1. **Demo video** ≤3:50 + rehearsal. `docs/07-demo-script.md` is current —
+   every beat matches the shipped UI — so rehearse straight from it.
+2. **Developer Feedback Form** (Uniswap): needs the public repo URL, so
+   submit right after the push, linking `FEEDBACK.md`.
+
+Done since this list was first written: **`FEEDBACK.md`** is in the repo
+(real integration notes — Permit2 reverting against a pinned fork block,
+`slippageTolerance` type strictness, no CORS headers, quote-vs-execute split)
+and the **README "Where the integrations live" section** covers both asks at
+once: Uniswap's exact file pointers and The Graph's composability leverage.
 
 ## Keys / secrets (all gitignored)
 

@@ -4,6 +4,11 @@ Layout and behavior of each screen. Visual language: dark, "ocean" palette
 (deep blues, aqua accents), generous motion on live data (pulses, ripples) —
 the product should *feel* alive because the data is live.
 
+**What actually shipped** (cut plan in docs/08): S1 Canvas and S2 Dashboard,
+joined by two panels this spec predates (Indexed by The Graph, Copilot);
+rebalance ships as a Dashboard panel rather than the S4 modal, and S3/S5 are
+the design record.
+
 ## S1 — Canvas (strategy builder)
 
 The flagship screen. Three zones:
