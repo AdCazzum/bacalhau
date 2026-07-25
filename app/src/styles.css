@@ -144,11 +144,12 @@ h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1.2px; color: v
 .testswap input { width: 90px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; }
 .testswap button { background: var(--panel-2); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; cursor: pointer; }
 .testswap button.go { background: var(--aqua); color: var(--bg); font-weight: 600; border-color: var(--aqua); }
-.testswap button:disabled { opacity: 0.5; }
+.testswap button:disabled { opacity: 0.4; cursor: default; }
 .quote { font-size: 13px; color: var(--aqua); }
 
 .dock { margin-top: 10px; background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 6px; padding: 5px 12px; cursor: pointer; font-size: 12px; }
-.dock:hover { color: var(--err); border-color: var(--err); }
+.dock:hover:not(:disabled) { color: var(--err); border-color: var(--err); }
+.dock:disabled { opacity: 0.4; cursor: default; }
 
 .feed .fill {
   background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
@@ -179,7 +180,7 @@ h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1.2px; color: v
 .rebalance .row { display: flex; gap: 8px; margin-top: 8px; }
 .rebalance button { background: var(--panel-2); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; cursor: pointer; }
 .rebalance button.go { background: var(--warn); color: var(--bg); font-weight: 600; border-color: var(--warn); }
-.rebalance button:disabled { opacity: 0.5; }
+.rebalance button:disabled { opacity: 0.4; cursor: default; }
 
 .wallet-inv {
   background: var(--panel); border: 1px solid var(--line); border-radius: 14px;

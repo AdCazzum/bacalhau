@@ -2,7 +2,7 @@ import { useState } from "react";
 import { parseUnits, type Address } from "viem";
 
 import { aquaAbi, erc20Abi, routerAbi, takerAbi } from "../lib/abi";
-import { publicClient, walletClient } from "../lib/chain";
+import { canWrite, publicClient, walletClient } from "../lib/chain";
 import { takerData } from "../lib/order";
 import { fmtAmount, USDC_DECIMALS, WETH_DECIMALS, wethValueInUsdc } from "../lib/units";
 import type { DemoState, Strategy } from "../state/useDemo";
@@ -241,7 +241,7 @@ function WalletInventory({
             <button onClick={preview} disabled={state !== "idle"}>
               {state === "quoting" ? "Quoting…" : "Preview"}
             </button>
-            <button className="go" onClick={execute} disabled={state !== "idle" || !plan}>
+            <button className="go" onClick={execute} disabled={!canWrite || state !== "idle" || !plan}>
               {state === "executing" ? "Rebalancing…" : "Rebalance via Uniswap"}
             </button>
           </div>
@@ -285,15 +285,19 @@ function TestSwap({ strategy, demo }: { strategy: Strategy; demo: DemoState }) {
     setState("swapping");
     setError(null);
     try {
+      // Only the local fork record carries a taker contract; the public
+      // Sepolia deployment has none, and the button is disabled there.
+      const taker = dep.taker;
+      if (!taker) throw new Error("fill simulation needs the local demo deployment");
       const amountIn = parseUnits(amount, inDecimals);
       const balance = await publicClient.readContract({
-        address: tokenIn, abi: erc20Abi, functionName: "balanceOf", args: [dep.taker],
+        address: tokenIn, abi: erc20Abi, functionName: "balanceOf", args: [taker],
       });
       if (balance < amountIn) {
         throw new Error(`taker underfunded: has ${fmtAmount(balance, inDecimals)}, needs ${amount}`);
       }
       const tx = await walletClient.writeContract({
-        address: dep.taker,
+        address: taker,
         abi: takerAbi,
         functionName: "swap",
         args: [strategy.order, tokenIn, tokenOut, amountIn, takerData(true)],
@@ -317,7 +321,7 @@ function TestSwap({ strategy, demo }: { strategy: Strategy; demo: DemoState }) {
         </button>
         <input value={amount} onChange={(e) => { setAmount(e.target.value); setQuoted(null); }} />
         <button onClick={getQuote} disabled={state !== "idle"}>Quote</button>
-        <button onClick={executeSwap} disabled={state !== "idle"} className="go">
+        <button onClick={executeSwap} disabled={!canWrite || state !== "idle"} className="go">
           {state === "swapping" ? "Swapping…" : "Swap"}
         </button>
       </div>
@@ -347,7 +351,7 @@ function DockButton({ strategy, dep, demo }: { strategy: Strategy; dep: NonNulla
     }
   }
   return (
-    <button className="dock" onClick={dock} disabled={busy}>
+    <button className="dock" onClick={dock} disabled={!canWrite || busy}>
       {busy ? "Docking…" : "Dock strategy"}
     </button>
   );

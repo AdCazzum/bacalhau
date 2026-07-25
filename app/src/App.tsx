@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { canWrite } from "./lib/chain";
 import { Canvas } from "./ui/Canvas";
 import { Dashboard } from "./ui/Dashboard";
 import { useDemo } from "./state/useDemo";
@@ -27,9 +28,21 @@ export function App() {
           </button>
         </nav>
         <span className="net">
-          {demo.deployment ? "anvil · demo wallet" : "connecting…"}
+          {demo.deployment
+            ? canWrite
+              ? "anvil · demo wallet"
+              : "Base Sepolia · read-only"
+            : "connecting…"}
         </span>
       </header>
+
+      {!canWrite && (
+        <div className="banner">
+          Live preview on Base Sepolia. Composing strategies and quoting are
+          fully interactive; shipping, rebalancing and swapping need a funded
+          key, so they run only on the local demo — <code>nix run .#dev</code>.
+        </div>
+      )}
 
       {demo.error && <div className="banner error">{demo.error}</div>}
 
