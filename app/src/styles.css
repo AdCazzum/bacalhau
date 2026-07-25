@@ -1,11 +1,16 @@
 :root {
-  --bg: #06121f;
-  --panel: #0b1d30;
-  --panel-2: #102941;
-  --line: #1d3a57;
-  --text: #d7e8f5;
-  --muted: #7fa0ba;
-  --aqua: #35d4c7;
+  /* Palette sampled from the key-visual swatch strip: Deep Matrix / Cyber
+     Aqua / Uni-Pink / Graph Purple / Holo White. Panels and lines are Deep
+     Matrix lifted a few steps, keeping its blue-black cast. */
+  --bg: #0f1015;
+  --panel: #15161d;
+  --panel-2: #1c1e28;
+  --line: #292c3b;
+  --text: #e0e0e4;
+  --muted: #8b90a3;
+  --aqua: #00ebfc;
+  --pink: #ff027f;
+  --purple: #6706c0;
   --warn: #f0b357;
   --err: #ef6a6a;
 }
@@ -14,7 +19,7 @@
 
 body {
   margin: 0;
-  background: radial-gradient(1200px 600px at 70% -10%, #0d2740 0%, var(--bg) 60%);
+  background: radial-gradient(1200px 600px at 70% -10%, #171a26 0%, var(--bg) 60%);
   color: var(--text);
   font-family: "Inter", system-ui, sans-serif;
 }
@@ -23,7 +28,10 @@ body {
 
 .topbar {
   display: flex; align-items: center; gap: 24px;
-  padding: 18px 0; border-bottom: 1px solid var(--line);
+  padding: 14px 0; border-bottom: 1px solid var(--line);
+  position: sticky; top: 0; z-index: 10;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(8px);
 }
 .topbar h1 { font-size: 20px; margin: 0; letter-spacing: 0.5px; }
 .topbar nav { display: flex; gap: 8px; }
@@ -37,6 +45,26 @@ body {
 .banner.error { background: #3a1520; color: var(--err); padding: 10px 14px; border-radius: 8px; margin-top: 12px; font-size: 13px; }
 
 h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); margin: 0 0 12px; }
+
+/* ---------- parallax hero ---------- */
+.hero {
+  position: relative; overflow: hidden;
+  margin: 0 -20px; /* bleed across the .app padding */
+  border-bottom: 1px solid var(--line);
+}
+.hero > svg, .hero > .hero-art {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  will-change: transform, opacity;
+}
+.hero-art { object-fit: cover; object-position: center 22%; display: block; }
+.hero > svg { pointer-events: none; }
+.hero-title {
+  position: absolute; left: 28px; bottom: 18px; z-index: 2;
+  text-shadow: 0 2px 12px rgba(15, 16, 21, 0.9);
+}
+.hero-title h1 { margin: 0; font-size: 34px; letter-spacing: 1px; }
+.hero-title p { margin: 2px 0 0; color: var(--aqua); font-size: 14px; letter-spacing: 2px; }
+.hero-title .pk { color: var(--pink); }
 
 /* ---------- canvas ---------- */
 .canvas { display: grid; grid-template-columns: 220px 1fr 320px; gap: 20px; padding-top: 24px; }
@@ -202,16 +230,6 @@ h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1.2px; color: v
 .indexed .pill.docked { background: transparent; border: 1px solid var(--muted); color: var(--muted); }
 .indexed h3.sub { margin-top: 14px; }
 
-/* ---------- sardine cursor ---------- */
-/* The project is named after salt cod, so the pointer is a fish. The emoji is
-   rendered in an inline SVG; hotspot sits on its mouth (it faces left). */
-* {
-  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Ctext y='22' font-size='22'%3E🐟%3C/text%3E%3C/svg%3E") 2 14, auto !important;
-}
-/* Keep a caret where text is actually typed. */
-input {
-  cursor: text !important;
-}
 .preview .alloc { margin-top: 14px; }
 .preview .ship { margin-top: 14px; }
 .preview .summary { margin: 10px 0 0; }

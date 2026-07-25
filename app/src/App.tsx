@@ -3,6 +3,7 @@ import { useState } from "react";
 import { canWrite } from "./lib/chain";
 import { Canvas } from "./ui/Canvas";
 import { Dashboard } from "./ui/Dashboard";
+import { Hero } from "./ui/Hero";
 import { useDemo } from "./state/useDemo";
 
 export function App() {
@@ -13,8 +14,9 @@ export function App() {
 
   return (
     <div className="app">
+      <Hero />
       <header className="topbar">
-        <h1>🐟 Bacalhau</h1>
+        <h1>Bacalhau</h1>
         <nav>
           <button
             className={view === "canvas" ? "tab active" : "tab"}
