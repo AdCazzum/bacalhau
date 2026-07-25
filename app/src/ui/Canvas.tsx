@@ -36,6 +36,7 @@ import {
 import { BPS } from "../compiler/opcodes";
 import { aquaAbi } from "../lib/abi";
 import { canWrite, publicClient, walletClient } from "../lib/chain";
+import { Copilot } from "./Copilot";
 import { buildAquaOrder, encodeOrder } from "../lib/order";
 import { previewAmountOut } from "../lib/preview";
 import { TEMPLATES } from "../lib/templates";
@@ -193,44 +194,54 @@ export function Canvas({ demo, onShipped }: CanvasProps) {
     setFlowNodes((ns) => [...ns, toFlowNode(node, nextDrop())]);
   };
 
+  /** Lay a graph out left to right, branches stacked, so it reads at a glance.
+   *  Shared by the templates and the copilot: a proposed strategy has to land
+   *  on the canvas looking like one the user composed by hand. */
+  const loadGraph = useCallback(
+    (built: StrategyGraph) => {
+      const depth = new Map<string, number>();
+      const walk = (id: string, d: number) => {
+        if ((depth.get(id) ?? -1) >= d) return;
+        depth.set(id, d);
+        for (const e of built.edges.filter((x) => x.from === id)) walk(e.to, d + 1);
+      };
+      const incoming = new Set(built.edges.map((e) => e.to));
+      const entry = built.nodes.find((n) => !incoming.has(n.id));
+      if (entry) walk(entry.id, 0);
+      const lane = new Map<number, number>();
+
+      setFlowNodes(
+        built.nodes.map((node) => {
+          const d = depth.get(node.id) ?? 0;
+          const row = lane.get(d) ?? 0;
+          lane.set(d, row + 1);
+          return toFlowNode(node, { x: 30 + d * 205, y: 30 + row * 165 });
+        }),
+      );
+      setFlowEdges(
+        built.edges.map((e, i) => ({
+          id: `e${i}`,
+          source: e.from,
+          target: e.to,
+          ...(e.port ? { sourceHandle: e.port, label: e.port, className: `port-${e.port}` } : {}),
+        })),
+      );
+    },
+    [toFlowNode],
+  );
+
   const loadTemplate = (id: string) => {
     if (!dep) return;
     const template = TEMPLATES.find((t) => t.id === id);
     if (!template) return;
-    const built = template.build({
-      weth: dep.weth,
-      usdc: dep.usdc,
-      allocWeth,
-      allocUsdc,
-      marketPrice: marketState.market?.price ?? null,
-    });
-    // Lay a template out left to right, branches stacked, so it reads at a glance.
-    const depth = new Map<string, number>();
-    const walk = (id: string, d: number) => {
-      if ((depth.get(id) ?? -1) >= d) return;
-      depth.set(id, d);
-      for (const e of built.edges.filter((x) => x.from === id)) walk(e.to, d + 1);
-    };
-    const incoming = new Set(built.edges.map((e) => e.to));
-    const entry = built.nodes.find((n) => !incoming.has(n.id));
-    if (entry) walk(entry.id, 0);
-    const lane = new Map<number, number>();
-
-    setFlowNodes(
-      built.nodes.map((node) => {
-        const d = depth.get(node.id) ?? 0;
-        const row = lane.get(d) ?? 0;
-        lane.set(d, row + 1);
-        return toFlowNode(node, { x: 30 + d * 205, y: 30 + row * 165 });
+    loadGraph(
+      template.build({
+        weth: dep.weth,
+        usdc: dep.usdc,
+        allocWeth,
+        allocUsdc,
+        marketPrice: marketState.market?.price ?? null,
       }),
-    );
-    setFlowEdges(
-      built.edges.map((e, i) => ({
-        id: `e${i}`,
-        source: e.from,
-        target: e.to,
-        ...(e.port ? { sourceHandle: e.port, label: e.port, className: `port-${e.port}` } : {}),
-      })),
     );
   };
 
@@ -386,7 +397,15 @@ export function Canvas({ demo, onShipped }: CanvasProps) {
         )}
       </section>
 
-      <aside className="preview">
+      <div className="rail">
+        <Copilot
+          demo={demo}
+          alloc={{ weth: allocWeth, usdc: allocUsdc }}
+          marketPrice={marketState.market?.price ?? null}
+          onLoad={loadGraph}
+        />
+
+        <aside className="preview">
         <h2>Preview</h2>
 
         <p className="hint">
@@ -464,7 +483,8 @@ export function Canvas({ demo, onShipped }: CanvasProps) {
           {shipState === "idle" ? "Ship strategy" : shipState === "signing" ? "Signing…" : "Shipping…"}
         </button>
         {shipError && <p className="warn">{shipError}</p>}
-      </aside>
+        </aside>
+      </div>
     </div>
   );
 }

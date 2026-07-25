@@ -4,7 +4,7 @@ description: >
   strategies and their fills from Aqua's events on Base Sepolia, powering the
   Bacalhau studio dashboard. The same events are also decoded by a standalone
   Substreams package (../substreams) for streaming consumers.
-repository: https://github.com/AdCazzum/bacalhau
+repository: https://github.com/AdCazzum/qilinswap
 schema:
   file: ./schema.graphql
 dataSources:

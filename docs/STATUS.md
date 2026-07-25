@@ -7,7 +7,7 @@ Product name = "QilinSwap" (user-facing: app, README, docs, pitch).
 "Bacalhau" survives as the codename in identifiers we do not want to churn:
 repo, package/flake names, `BacalhauRouter.sol` (already deployed on Base
 Sepolia), and the golden-vector salt. Repo remote:
-git@github.com:AdCazzum/bacalhau.git (commits are NOT pushed by the agent —
+git@github.com:AdCazzum/qilinswap.git (commits are NOT pushed by the agent —
 the user pushes manually).
 
 ## One-liner

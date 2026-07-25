@@ -2,7 +2,7 @@ specVersion: v0.1.0
 package:
   name: bacalhau_aqua
   version: v0.1.0
-  url: https://github.com/AdCazzum/bacalhau
+  url: https://github.com/AdCazzum/qilinswap
   description: |
     Decodes 1inch Aqua shared-liquidity events (Shipped, Docked, Pulled,
     Pushed) into a typed stream. Powers the Bacalhau strategy studio's
