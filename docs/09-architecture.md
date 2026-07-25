@@ -95,7 +95,8 @@ edits — but the compiler spec below is the authority.
 - graphql-request for subgraph queries; polling for feed (websockets only if
   trivially available)
 - Recharts (curve preview, charts); no design system — hand-rolled ocean theme
-- Uniswap API called client-side with the key in env (PoC posture, 08)
+- Uniswap API reached through a same-origin `/uniswap` proxy that holds the
+  key server-side (Vite dev server locally, Pages worker in production, 08)
 
 ## Chain targets
 
