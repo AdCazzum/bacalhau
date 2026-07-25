@@ -31,28 +31,57 @@ Uniswap. Three sponsors: 1inch (core), The Graph (observability), Uniswap
 - **Uniswap** ✅ CORE: market reference price (canvas overlay + value gauge)
   AND rebalance execution — quote via Trading API, execute real swap via
   SwapRouter02 against a Base fork. Verified in-browser.
-- **Demo env**: `scripts/demo-env.sh` = anvil fork of Base + deploy + seed
-  strategy; `scripts/deal.sh` = ERC20 balance cheat. `app/public/local.json`
-  carries addresses (gitignored).
+- **The Graph** ✅ two products over the same Aqua events:
+  - `substreams/` — Rust/wasm module decoding Shipped/Docked/Pulled/Pushed
+    into protobuf, plus a `graph_out` emitting EntityChanges. Packs to a valid
+    `.spkg`. Endpoint for Base Sepolia is
+    `basesepolia.substreams.pinax.network:443` (absent from the docs, found in
+    the networks registry); running it needs a provider token we don't have.
+  - `subgraph/` — deployed and indexing, `hasIndexingErrors: false`:
+    https://api.studio.thegraph.com/query/1756929/bacalhau-aqua/v0.0.2
+  - Dashboard panel "Indexed by The Graph" shows indexer head block, strategy
+    status and recent movements.
+- **Base Sepolia** (chain 84532, deploy block 44584712) — real public
+  deployment, addresses in `contracts/deployments/sepolia.json`:
+  Aqua `0xE5Cf2ec690BeE8b59cB8340f469ecfB2f0De98bD`,
+  router `0xF9b0AfdDad9D249Eb22e69b15df2a4E8C1e99ABC`.
+  1 Shipped + 3 Pulled + 5 Pushed on chain, total cost ~0.00006 ETH.
+- **Demo env**: `nix run .#dev` (process-compose: anvil Base fork → deploy +
+  seed → vite) is the single entry point; `scripts/demo-env.sh` and
+  `scripts/deal.sh` remain for piecemeal use. `local.json` is per-run and
+  gitignored.
 
 ## Remaining ❌
 
-1. **The Graph indexer** (the last sponsor pillar): Substreams module (Rust)
-   decoding Aqua ship/dock/pull/push → substreams-powered subgraph → deploy to
-   Subgraph Studio. Compose 2 Graph products = the qualifying requirement.
-   - `substreams` CLI not in nixpkgs — needs a fetchurl derivation in flake.
-   - Real Base transactions for live data (R3) — needs a funded Base wallet.
-2. **FEEDBACK.md** (Uniswap qualification) + submit the Uniswap Developer
-   Feedback Form with its link. Material: real integration notes incl. the
-   Permit2-on-fork revert we worked around.
-3. **README** with architecture + pointers to integration code (Uniswap
-   requires this; also general submission hygiene).
-4. **Demo video** ≤3:50 (docs/07 script) + final rehearsal.
+1. **`FEEDBACK.md`** (Uniswap qualification) + submit the Developer Feedback
+   Form with its link. Material from the real integration: Permit2's EIP-712
+   path reverting against a pinned fork block, `slippageTolerance` needing a
+   number (a string returns an undiagnostic HTTP 400), no CORS headers so the
+   browser needs a dev proxy, quote working while execute needed a direct
+   router.
+2. **README architecture section** — satisfies two requirements at once:
+   Uniswap wants pointers to the exact integration files, The Graph wants the
+   composability leverage made explicit ("what became easier").
+3. **Demo video** ≤3:50 + rehearsal. `docs/07-demo-script.md` is stale: written
+   before the Graph pillar, Base Sepolia and `nix run .#dev` existed.
 
-## Keys (in app/.env.local, gitignored)
+## Keys / secrets (all gitignored)
 
-- `VITE_UNISWAP_API_KEY` — set, working.
-- `VITE_GRAPH_API_KEY` — set (for subgraph queries; Studio deploy is separate).
+`app/.env.local`:
+- `VITE_UNISWAP_API_KEY` — Uniswap Developer Platform, working.
+- `VITE_GRAPH_SUBGRAPH_URL` — Studio query endpoint the dashboard polls.
+- `VITE_GRAPH_API_KEY` — gateway key, for a published subgraph (unused while
+  we query Studio directly).
+
+`contracts/.env.sepolia`:
+- `SEPOLIA_DEPLOYER_PK` — throwaway testnet wallet
+  `0x4fB5C90d3A828067aE07e134eA82ad14DAD50d58`, funded with 0.1 ETH, ~0.0999
+  left. NEVER fund with real ETH.
+- `GRAPH_DEPLOY_KEY` — Subgraph Studio deploy key (distinct from the query
+  key above).
+
+Still missing: a Substreams provider token (Pinax or thegraph.market JWT) to
+*run* the module against live data. Not required by any track.
 
 ## Key technical decisions / gotchas
 
@@ -65,6 +94,18 @@ Uniswap. Three sponsors: 1inch (core), The Graph (observability), Uniswap
 - forge broadcast collector chokes on BacalhauRouter's inherited constructor
   → deploy via a self-contained DemoDeployer factory (empty-args creation).
 - chain.ts pins chainId 8453 for correct EIP-712 on the fork.
+- Subgraph Studio rejects substreams-powered subgraphs outright; the subgraph
+  is a classic EVM datasource and the Substreams module stands alone.
+- `substreams pack` resolves manifest imports over the network, so the
+  entity-change sink proto is vendored under
+  `substreams/proto/sf/substreams/sink/entity/v1` (field numbers mirror the
+  crate, so the wire format is unchanged).
+- AssemblyScript mappings trap when reading an unset enum on a fresh entity —
+  capture prior state before writing (bit us on `Strategy.status`).
+- Aqua's events are all non-indexed, so a subgraph must match on signature,
+  not topics.
+- The dev server serves index.html for unknown paths, so a missing
+  `local.json` arrives as 200 + HTML: parse defensively.
 
 ## Run it
 
@@ -79,5 +120,7 @@ exists, and `ordered_shutdown` stops vite before the chain. Piecemeal:
 
 ## Commits (progressive history for 1inch)
 
-specs+flake → contracts scaffold → InventorySkew → compiler → demo env →
-Uniswap market → Base fork → Uniswap rebalance.
+specs+flake → contracts scaffold → InventorySkew opcode → TS compiler →
+demo env → frontend → Uniswap market reference → Base fork → Uniswap
+rebalance → Substreams toolchain → Substreams module + Sepolia deploy →
+subgraph live → single entry point.

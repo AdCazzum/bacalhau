@@ -16,30 +16,37 @@ these.
 ## Qualification requirements checklist
 
 ### 1inch
-- [ ] Official Aqua/SwapVM contracts used (modified SwapVM redeploy allowed —
-      planned: at least one custom instruction/opcode, judges score SwapVM
-      usage higher)
-- [ ] On-chain token transfers shown in final demo (local fork OK) —
-      covered by Flow 6 "Execute test swap"
-- [ ] Proper git commit history: commit early, commit often, **no
-      single-commit dump on final day**
+- [x] Official Aqua/SwapVM contracts used as submodules; `BacalhauRouter` is
+      the allowed modified-SwapVM redeploy, adding the custom `InventorySkew`
+      opcode `0x22` (`contracts/src/InventorySkew.sol`)
+- [x] On-chain token transfers shown in final demo (local Base fork) —
+      Flow 6 "Execute test swap"
+- [x] Proper git commit history: progressive commits throughout, no
+      single-commit dump
 
 ### The Graph
-- [ ] Compose ≥2 Graph products: Substreams module feeding a subgraph
-      (substreams-powered subgraph) — this is the qualifying composition
-- [ ] Live data from a Graph provider (no mocks): subgraph deployed to
-      Subgraph Studio, indexing the real chain (mainnet or Base). If Aqua has
-      no organic traffic yet, generate real transactions ourselves on Base
-- [ ] Make the composition visible: README section "what became easier because
-      the module is reusable / the subgraph is standardized"
-- [ ] Schema follows the standardized DEX-AMM shape where applicable
-      (Protocol / Pool / Swap / Position)
-- [ ] Public repo + 2–4 min demo video
+- [x] Compose ≥2 Graph products. **Planned as a substreams-powered subgraph;
+      Studio has since dropped support** ("Substreams-powered Subgraphs,
+      originally intended for non-EVM chains, are no longer supported"), so the
+      shipped shape is a **reusable composable Substreams module**
+      (`substreams/`, explicitly in scope per the track) **plus a subgraph**
+      (`subgraph/`) over the same Aqua events. Weaker than one feeding the
+      other: be upfront about it and cite the rejection.
+- [x] Live data from a Graph provider (no mocks): subgraph deployed to Subgraph
+      Studio, indexing Base Sepolia from block 44584712. Aqua has no organic
+      testnet traffic, so we generated real transactions ourselves
+      (`contracts/script/SepoliaSwaps.s.sol`)
+- [ ] Make the composability leverage clear — the track asks to "show what
+      became easier". README section pending
+- [~] Schema follows the standardized DEX-AMM shape where applicable:
+      `Protocol` / `Strategy` (≈Pool) / `Fill` (≈Swap). No `Position` entity —
+      Aqua strategies are not LP positions
+- [ ] Public repo + 2–4 min demo video (video pending)
 
 ### Uniswap
-- [ ] Valid API key from Uniswap Developer Platform; API used for **core**
-      functionality: rebalance execution (trade routing + execution) and
-      market reference quotes
+- [x] Valid API key from Uniswap Developer Platform; API used for **core**
+      functionality: market reference quotes (`app/src/lib/uniswap.ts`) and
+      rebalance routing + execution (`app/src/lib/rebalance.ts`)
 - [ ] `FEEDBACK.md` in repo + Developer Feedback Form submitted with its link
 - [ ] README points to the exact files/lines of the integration
 
@@ -57,4 +64,6 @@ these.
 - Public GitHub repo (this one), README with setup + architecture
 - Demo video 2–4 min (Graph limit is the binding one)
 - FEEDBACK.md (Uniswap) + feedback form submission
-- Live subgraph endpoint (Subgraph Studio) + published Substreams package
+- Live subgraph endpoint (Subgraph Studio). The Substreams module ships as
+  source that packs reproducibly (`substreams pack`) — no track requires
+  publishing it to the registry, which would need a provider token.
