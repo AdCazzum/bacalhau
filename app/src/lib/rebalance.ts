@@ -2,10 +2,10 @@
  * Rebalance execution via the Uniswap Trading API against the Base fork.
  *
  * Flow (docs/04, the "core" Uniswap integration):
- *   1. quote WETH<->USDC on Base (chain 8453)
- *   2. sign the Permit2 typed-data with the demo wallet
- *   3. /swap -> executable transaction (approve is folded into the route)
- *   4. send it from the maker wallet against the forked Uniswap pools
+ *   1. quote WETH<->USDC on Base (chain 8453) through the same-origin
+ *      /uniswap proxy, which attaches the API key server-side
+ *   2. approve SwapRouter02 for the sell token
+ *   3. execute exactInputSingle on the fee tier the API's best route reported
  *
  * The corrective direction/size is chosen to move the strategy's inventory
  * back toward its target split.
@@ -15,12 +15,9 @@ import type { Address, Hex } from "viem";
 
 import { walletClient, publicClient } from "./chain";
 import { erc20Abi } from "./abi";
+import { UNAVAILABLE_STATUS } from "./uniswap";
 
 const QUOTE_URL = "/uniswap/v1/quote";
-const SWAP_URL = "/uniswap/v1/swap";
-const PERMIT2 = "0x000000000022D473030F116dDEE9F6B43aC78BA3" as const;
-
-const apiKey: string | undefined = import.meta.env.VITE_UNISWAP_API_KEY;
 
 export interface RebalancePlan {
   sellToken: Address;
@@ -33,11 +30,6 @@ export interface RebalancePlan {
 
 export class RebalanceError extends Error {}
 
-function headers(): Record<string, string> {
-  if (!apiKey) throw new RebalanceError("VITE_UNISWAP_API_KEY is not set");
-  return { "Content-Type": "application/json", "x-api-key": apiKey };
-}
-
 /** Quote the corrective swap; returns the plan the sheet previews. */
 export async function quoteRebalance(
   sellToken: Address,
@@ -47,7 +39,7 @@ export async function quoteRebalance(
 ): Promise<{ plan: RebalancePlan; quote: unknown; permitData: unknown }> {
   const res = await fetch(QUOTE_URL, {
     method: "POST",
-    headers: headers(),
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       type: "EXACT_INPUT",
       tokenIn: sellToken,
@@ -61,7 +53,13 @@ export async function quoteRebalance(
       slippageTolerance: 5,
     }),
   });
-  if (!res.ok) throw new RebalanceError(`quote failed: HTTP ${res.status}`);
+  if (!res.ok) {
+    throw new RebalanceError(
+      UNAVAILABLE_STATUS.includes(res.status)
+        ? "the /uniswap proxy has no API key configured"
+        : `quote failed: HTTP ${res.status}`,
+    );
+  }
   const body = await res.json();
   const q = body.quote;
   if (!q?.output?.amount) throw new RebalanceError("quote missing output");

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { demoAccount } from "../lib/chain";
-import { fetchMarketPrice, hasUniswapKey, type MarketPrice } from "../lib/uniswap";
+import { fetchMarketPrice, UniswapUnavailableError, type MarketPrice } from "../lib/uniswap";
 
 const POLL_MS = 10_000; // 06 freshness contract, kept polite on API quota
 
@@ -14,9 +14,12 @@ export interface MarketPriceState {
 }
 
 export function useMarketPrice(): MarketPriceState {
-  const enabled = hasUniswapKey();
   const [market, setMarket] = useState<MarketPrice | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Optimistic: the API key lives behind the /uniswap proxy and never reaches
+  // the bundle, so the first response is the only way to learn whether live
+  // market data is actually available.
+  const [enabled, setEnabled] = useState(true);
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
@@ -30,7 +33,13 @@ export function useMarketPrice(): MarketPriceState {
           setMarket(m);
           setError(null);
         })
-        .catch((e) => alive && setError(String(e)));
+        .catch((e) => {
+          if (!alive) return;
+          // An unconfigured proxy will keep saying no; stop the poll instead
+          // of burning a request every 10s for the rest of the session.
+          if (e instanceof UniswapUnavailableError) setEnabled(false);
+          else setError(String(e));
+        });
 
     pull();
     const poll = setInterval(pull, POLL_MS);

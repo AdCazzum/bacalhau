@@ -395,6 +395,7 @@ export function Canvas({ demo, onShipped }: CanvasProps) {
         </div>
 
         <CurveChart points={curve} market={marketPrice} />
+
         <p className="summary">{summary}</p>
 
         {errors.length > 0 && (

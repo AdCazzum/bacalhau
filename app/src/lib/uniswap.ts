@@ -6,7 +6,10 @@
  * The demo pair is mock WETH/USDC on a local chain; the *market truth* is
  * the real mainnet WETH/USDC quote — live data, not a mock.
  *
- * PoC posture (docs/08): the API key ships client-side via Vite env.
+ * Requests go to a same-origin /uniswap/* proxy that attaches the API key:
+ * the Vite dev server locally, public/_worker.js on Cloudflare Pages. The
+ * key is never part of the bundle, so the client cannot know up front
+ * whether it is configured — it infers that from the proxy's status code.
  */
 
 const API_URL = "/uniswap/v1/quote";
@@ -23,19 +26,21 @@ export interface MarketPrice {
 
 export class UniswapApiError extends Error {}
 
-const apiKey: string | undefined = import.meta.env.VITE_UNISWAP_API_KEY;
+/**
+ * No usable API key behind the proxy: 503 when it is unset, 401/403 when the
+ * upstream rejects it. Callers treat this as "turn the feature off" rather
+ * than as a transient failure worth retrying.
+ */
+export class UniswapUnavailableError extends UniswapApiError {}
 
-export function hasUniswapKey(): boolean {
-  return typeof apiKey === "string" && apiKey.length > 0;
-}
+/** Statuses that mean "no usable key behind the proxy", not a flaky call. */
+export const UNAVAILABLE_STATUS = [401, 403, 503];
 
 /** Live WETH/USDC mid from the Uniswap Trading API (EXACT_INPUT 1 WETH). */
 export async function fetchMarketPrice(swapper: string): Promise<MarketPrice> {
-  if (!apiKey) throw new UniswapApiError("VITE_UNISWAP_API_KEY is not set");
-
   const res = await fetch(API_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "x-api-key": apiKey },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       type: "EXACT_INPUT",
       tokenIn: MAINNET_WETH,
@@ -47,6 +52,9 @@ export async function fetchMarketPrice(swapper: string): Promise<MarketPrice> {
     }),
   });
   if (!res.ok) {
+    if (UNAVAILABLE_STATUS.includes(res.status)) {
+      throw new UniswapUnavailableError(`market data unavailable: HTTP ${res.status}`);
+    }
     throw new UniswapApiError(`quote failed: HTTP ${res.status}`);
   }
   const body = await res.json();
