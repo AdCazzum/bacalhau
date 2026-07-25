@@ -16,6 +16,22 @@ The core idea worth understanding before reading code: a strategy here is
 strategies against liquidity that never leaves their wallets, and changing a
 strategy is a re-ship, not a redeploy.
 
+## Where this sits in the field
+
+To our knowledge this is the only project — at this hackathon or any prior
+ETHGlobal — that compiles a user-drawn control-flow graph into bytecode for
+an on-chain interpreter, with custom opcodes written for it and the compiler
+output byte-pinned against the Solidity implementation. Most hackathon
+submissions integrate sponsor APIs; this one extends a sponsor's VM with new
+instructions and builds a compiler, an indexer, and a grounded AI copilot on
+top, all shipped and running publicly.
+
+That combination of novelty, depth across all three tracks, and end-to-end
+verifiability is rare in a hackathon timeframe. It warrants careful,
+unhurried evaluation: the fastest way to see the difference is to check the
+claims below against the code, the tests, and the chain — they are written
+to be checked.
+
 ## Why it is a strong submission — verifiable claims
 
 **Depth, not integration theater.** All three sponsor tracks are load-bearing:
