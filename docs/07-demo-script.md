@@ -41,23 +41,25 @@ more than 70% ETH?' — below, accumulate at five basis points; above, flip to
 distributing at fifty. That's our bytecode, and 0x23 is our opcode, running on
 1inch's VM."
 
-### Beat 3 — Ask for it in English (1:40–2:10)
-Screen: the Copilot panel on the Canvas. Click the example *"Build me a desk
-that leans out of ETH above 70%"*. When the proposal lands, point at the tool
-pills under the answer, then click **Load on canvas** — the graph appears, the
-bytecode counter fills, Ship lights up.
-Line: "You don't have to know the blocks. The copilot reads our subgraph and
-The Graph Network through the official Subgraph MCP — those tags say which
-source answered. It doesn't sign anything: it hands back a program, our
-compiler checks it, and only then can I ship it. A graph it gets wrong gets
-rejected right here."
+### Beat 3 — Ask for it in English (1:40–2:20)
+Screen: the Copilot panel on the Canvas.
+1. Click *"How does my 0.05% fee compare to the real WETH/USDC pools on Base?"*
+   — ~10s, comes back with the four Uniswap V3 fee tiers, their TVL and volume.
+   Point at the two **Subgraph MCP** pills under the answer.
+2. Click *"Build me a desk that leans out of ETH above 70%"*, then **Load on
+   canvas** — the graph appears, the bytecode counter fills, Ship lights up.
+Line: "First question is market research: it went out to The Graph Network
+through the official Subgraph MCP and came back with real Base liquidity —
+those tags name the source, live, right now. Second one writes the strategy.
+It doesn't sign anything: it hands back a program, our compiler checks it, and
+only then can I ship it. A graph it gets wrong is rejected right here."
 
-### Beat 4 — Ship it (2:10–2:25)
+### Beat 4 — Ship it (2:20–2:35)
 Screen: Ship strategy → lands on the Dashboard, new card beside the seed one.
 Line: "One signature, no deposit. My tokens haven't moved — Aqua just recorded a
 budget it can draw on when a trade actually executes."
 
-### Beat 5 — The state machine flips, on-chain (2:25–3:05)
+### Beat 5 — The state machine flips, on-chain (2:35–3:15)
 **The money shot.** Screen: test-swap panel on the new card.
 1. Quote 1 WETH → say the number out loud.
 2. Swap 6 WETH → balances move, the inventory bar crosses 70%.
@@ -67,14 +69,14 @@ six ETH — watch the inventory bar cross seventy percent. Same quote again, and
 the price is worse: the strategy took the other branch. That decision happened
 inside the VM, on-chain, in our own instruction."
 
-### Beat 6 — Correct the drift (3:05–3:30)
+### Beat 6 — Correct the drift (3:15–3:37)
 Screen: Wallet inventory banner amber → Preview (Uniswap route appears) →
 Rebalance → gauge moves.
 Line: "Trading all day leaves me lopsided. The Uniswap API quotes and routes the
 corrective swap, and it executes against real Base liquidity — that's a live
 route, not a mock."
 
-### Beat 7 — Close (3:30–3:55)
+### Beat 7 — Close (3:37–3:58)
 Screen: the Indexed page (endpoint + query + rows), then a quick pan over the
 README.
 Line: "Aqua had no indexer, so we built one: a reusable Substreams module and a

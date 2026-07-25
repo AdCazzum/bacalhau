@@ -90,7 +90,7 @@
             # silently disable every Graph panel, which is exactly what a judge
             # opening the public URL would look for.
             env.VITE_GRAPH_SUBGRAPH_URL =
-              "https://api.studio.thegraph.com/query/1756929/bacalhau-aqua/v0.0.2";
+              "https://api.studio.thegraph.com/query/1756929/bacalhau-aqua/v0.0.4";
 
             buildPhase = ''
               runHook preBuild

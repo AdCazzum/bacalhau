@@ -62,7 +62,7 @@ const TOOLS = [
           query: {
             type: "string",
             description:
-              "GraphQL query. Entities: strategies(first, orderBy, orderDirection) { id maker program status shippedAt dockedAt fillCount totalPulled totalPushed }, fills(first, orderBy, orderDirection) { id direction token amount timestamp txHash strategy { id } }, protocol(id: \"aqua\") { strategyCount fillCount }, _meta { block { number } }.",
+              "GraphQL query. Entities: strategies(first, orderBy, orderDirection) { id maker program status shippedAt dockedAt fillCount volume { token pulled pushed } }, fills(first, orderBy, orderDirection) { id direction token amount timestamp txHash strategy { id } }, protocol(id: \"aqua\") { strategyCount fillCount }, _meta { block { number } }. PULL means tokens LEFT the maker's wallet (the taker received them); PUSH means tokens ARRIVED in the maker's wallet. Amounts are raw units of the token named beside them: WETH 0x0f599727f37d4fc8ab5dbd3afe86c3ebf4a892f7 has 18 decimals, USDC 0xb6ec46c767b71a5aa4b51bad4a40827560d63e55 has 6. Scale per token before quoting a figure, and never add two tokens together.",
           },
         },
         required: ["query"],

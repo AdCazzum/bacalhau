@@ -47,9 +47,12 @@ const TOOL_LABELS: Record<string, string> = {
   propose_strategy: "proposal",
 };
 
+/** The three shapes of question worth demonstrating: our own indexed history,
+ *  market context from the wider network over MCP, and a strategy the compiler
+ *  can check. */
 const EXAMPLES = [
   "Which of my strategies has taken the most flow?",
-  "How much has been pulled from me today?",
+  "How does my 0.05% fee compare to the real WETH/USDC pools on Base?",
   "Build me a desk that leans out of ETH above 70%",
 ];
 

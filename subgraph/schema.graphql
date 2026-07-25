@@ -14,10 +14,25 @@ type Strategy @entity(immutable: false) {
   dockedAt: BigInt
   "Number of swaps that touched this strategy (pull events)."
   fillCount: Int!
-  "Cumulative amounts moved, per direction."
-  totalPulled: BigInt!
-  totalPushed: BigInt!
+  """
+  Cumulative movement, split by token. A single number per direction cannot
+  exist here: a strategy moves two tokens with different decimals, so summing
+  their raw amounts produces a quantity in no unit at all.
+  """
+  volume: [StrategyTokenVolume!]! @derivedFrom(field: "strategy")
   fills: [Fill!]! @derivedFrom(field: "strategy")
+}
+
+"""
+Cumulative pulled/pushed amounts for one (strategy, token) pair, in that
+token's own raw units. The id is `<strategyHash>-<tokenAddress>`.
+"""
+type StrategyTokenVolume @entity(immutable: false) {
+  id: ID!
+  strategy: Strategy!
+  token: Bytes!
+  pulled: BigInt!
+  pushed: BigInt!
 }
 
 enum StrategyStatus {

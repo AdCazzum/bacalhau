@@ -76,8 +76,10 @@ export function Indexed() {
                 <td><code>{s.maker.slice(0, 10)}…</code></td>
                 <td><span className={`pill ${s.status.toLowerCase()}`}>{s.status}</span></td>
                 <td>{s.fillCount}</td>
-                <td>{s.totalPulled}</td>
-                <td>{s.totalPushed}</td>
+                {/* One row per token: the pair moves two of them, with
+                    different decimals, so a single total would have no unit. */}
+                <td>{s.volume.map((v) => <div key={v.token}>{amount(v.token, v.pulled)}</div>)}</td>
+                <td>{s.volume.map((v) => <div key={v.token}>{amount(v.token, v.pushed)}</div>)}</td>
               </tr>
             ))}
           </tbody>

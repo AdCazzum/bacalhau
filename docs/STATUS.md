@@ -59,7 +59,7 @@ Uniswap. Three sponsors: 1inch (core), The Graph (observability), Uniswap
     `basesepolia.substreams.pinax.network:443` (absent from the docs, found in
     the networks registry); running it needs a provider token we don't have.
   - `subgraph/` — deployed and indexing, `hasIndexingErrors: false`:
-    https://api.studio.thegraph.com/query/1756929/bacalhau-aqua/v0.0.2
+    https://api.studio.thegraph.com/query/1756929/bacalhau-aqua/v0.0.4
   - Dashboard panel "Indexed by The Graph" shows indexer head block, strategy
     status and recent movements.
   - **Copilot** (`app/src/ui/Copilot.tsx` + `app/public/_worker.js/agent.js`) —

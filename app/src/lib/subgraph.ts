@@ -37,6 +37,13 @@ export function subgraphEndpoint(): string | null {
   return endpoint();
 }
 
+/** Cumulative movement for one token, in that token's own raw units. */
+export interface IndexedVolume {
+  token: string;
+  pulled: string;
+  pushed: string;
+}
+
 export interface IndexedStrategy {
   id: string;
   maker: string;
@@ -44,8 +51,7 @@ export interface IndexedStrategy {
   status: "LIVE" | "DOCKED";
   shippedAt: string;
   fillCount: number;
-  totalPulled: string;
-  totalPushed: string;
+  volume: IndexedVolume[];
 }
 
 export interface IndexedFill {
@@ -67,7 +73,7 @@ export interface IndexedState {
 
 export const QUERY = `{
   strategies(first: 50, orderBy: shippedAt, orderDirection: desc) {
-    id maker program status shippedAt fillCount totalPulled totalPushed
+    id maker program status shippedAt fillCount volume { token pulled pushed }
   }
   fills(first: 50, orderBy: timestamp, orderDirection: desc) {
     id direction token amount timestamp txHash strategy { id }

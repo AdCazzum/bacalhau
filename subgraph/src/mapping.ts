@@ -1,7 +1,7 @@
 import { BigInt, Bytes, ethereum } from "@graphprotocol/graph-ts";
 
 import { Docked, Pulled, Pushed, Shipped } from "../generated/Aqua/Aqua";
-import { Fill, Protocol, Strategy } from "../generated/schema";
+import { Fill, Protocol, Strategy, StrategyTokenVolume } from "../generated/schema";
 
 const PROTOCOL_ID = "aqua";
 
@@ -28,8 +28,6 @@ export function handleShipped(event: Shipped): void {
     s = new Strategy(id);
     s.program = event.params.strategy;
     s.fillCount = 0;
-    s.totalPulled = BigInt.zero();
-    s.totalPushed = BigInt.zero();
     p.strategyCount = p.strategyCount + 1;
   } else {
     wasLive = s.status == "LIVE";
@@ -116,17 +114,31 @@ function recordFill(
   fill.save();
 
   const s = Strategy.load(strategyId);
-  if (s != null) {
+  if (s != null && direction == "PULL") {
     // A swap emits one Pulled and one Pushed; count pulls so fillCount tracks
     // swaps, not token movements.
-    if (direction == "PULL") {
-      s.fillCount = s.fillCount + 1;
-      s.totalPulled = s.totalPulled.plus(amount);
-    } else {
-      s.totalPushed = s.totalPushed.plus(amount);
-    }
+    s.fillCount = s.fillCount + 1;
     s.save();
   }
+
+  // Volume is kept per token: the two sides of a swap are different tokens with
+  // different decimals, so one running total per direction would be a number in
+  // no unit at all.
+  const volumeId = strategyId + "-" + token.toHexString();
+  let volume = StrategyTokenVolume.load(volumeId);
+  if (volume == null) {
+    volume = new StrategyTokenVolume(volumeId);
+    volume.strategy = strategyId;
+    volume.token = token;
+    volume.pulled = BigInt.zero();
+    volume.pushed = BigInt.zero();
+  }
+  if (direction == "PULL") {
+    volume.pulled = volume.pulled.plus(amount);
+  } else {
+    volume.pushed = volume.pushed.plus(amount);
+  }
+  volume.save();
 
   const p = protocol();
   if (direction == "PULL") {
