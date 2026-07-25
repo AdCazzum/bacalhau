@@ -36,19 +36,25 @@ these.
       Studio, indexing Base Sepolia from block 44584712. Aqua has no organic
       testnet traffic, so we generated real transactions ourselves
       (`contracts/script/SepoliaSwaps.s.sol`)
-- [ ] Make the composability leverage clear — the track asks to "show what
-      became easier". README section pending
+- [x] Make the composability leverage clear — the track asks to "show what
+      became easier": README "The Graph" section explains that both products
+      share one decode of Aqua's events, so a new sink points at the existing
+      `.spkg` instead of re-deriving the event layout
 - [~] Schema follows the standardized DEX-AMM shape where applicable:
       `Protocol` / `Strategy` (≈Pool) / `Fill` (≈Swap). No `Position` entity —
       Aqua strategies are not LP positions
-- [ ] Public repo + 2–4 min demo video (video pending)
+- [ ] Public repo + 2–4 min demo video (video pending; script in `07`)
 
 ### Uniswap
 - [x] Valid API key from Uniswap Developer Platform; API used for **core**
       functionality: market reference quotes (`app/src/lib/uniswap.ts`) and
       rebalance routing + execution (`app/src/lib/rebalance.ts`)
-- [ ] `FEEDBACK.md` in repo + Developer Feedback Form submitted with its link
-- [ ] README points to the exact files/lines of the integration
+- [x] `FEEDBACK.md` in repo — real integration notes, including the disclosure
+      that execution bypasses the API's Permit2 calldata
+- [ ] Developer Feedback Form submitted with the FEEDBACK.md link (needs the
+      public repo URL, so after the push)
+- [x] README points to the exact files of the integration ("Where the
+      integrations live")
 
 ## Verifiability rules (apply to everything)
 

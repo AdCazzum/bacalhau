@@ -6,70 +6,96 @@ on-chain actions run against our prepared environment, rehearsed.
 
 ## Cast & setup (before recording)
 
-- Wallet funded with WETH + USDC, approvals already granted (approval flow is
-  *mentioned*, not performed — it burns 20 boring seconds).
-- One older strategy already live with a few fills, so the dashboard is not
-  empty at first sight.
-- Market price feed live; indexer synced; a terminal is NEVER shown.
+- `nix run .#dev` running: Base fork, contracts deployed, seed strategy live so
+  the dashboard is never empty. A terminal is NEVER shown.
+- Demo wallet is the anvil account the app already signs with — no extension,
+  no approval theatre (mention approvals, never perform them).
+- Market overlay live. If the Uniswap proxy is flaky, the curve still renders;
+  don't wait for the dashed line on camera.
+- Browser at 1080p+, the app opens on the Canvas.
 
 ## Script
 
-### Beat 0 — Cold open (0:00–0:20)
-Screen: dashboard of the pre-existing strategy, feed pulsing with a fill.
-Line: "This is a market-making strategy earning fees right now. Its owner
-wrote zero code, deployed zero contracts, and the funds are still sitting in
-their own wallet. Let me build one from scratch."
+### Beat 0 — Cold open (0:00–0:15)
+Screen: Dashboard, seed strategy with fills in the feed.
+Line: "This is a market-making strategy earning fees right now. Its owner wrote
+zero code, deployed zero contracts, and the funds are still in their own wallet.
+Here's how it's built."
 
-### Beat 1 — Compose (0:20–1:10)
-Screen: Canvas. Pick WETH/USDC → template "Self-balancing MM" → pipeline
-appears: Constant-Product → Inventory Skew → Flat Fee → Deadline.
-Actions: tweak fee 0.3%, watch curve move against the live market line.
-Line: "Each block is a real on-chain instruction. The curve is my strategy;
-the moving line is the live market. And this block — Inventory Skew — is an
-instruction we built ourselves: it makes the strategy fight its own
-imbalance."
+### Beat 1 — It's a graph, not a form (0:15–1:00)
+Screen: Canvas → template **Two-sided desk**. Then click the two preview
+buttons — *they sell you WETH* / *they buy WETH from you* — and let the
+highlighted path and the fee in the summary flip: 0.05% one way, 0.5% the other.
+Line: "A strategy here is a program with branches. This one quotes each side of
+the book differently: cheap for whoever sells me ETH, expensive for whoever buys
+it. A constant-product pool has exactly one fee, symmetric, so this simply isn't
+expressible there. The highlight is the path the VM would actually run."
 
-### Beat 2 — Ship (1:10–1:40)
-Screen: review sheet → wallet signature → strategy live on dashboard.
-Line: "One signature. No deposit — my tokens haven't moved; I've granted the
-strategy a budget it can draw on only when a trade actually executes."
+### Beat 2 — Our own instruction (1:00–1:40)
+Screen: template **Adaptive desk**, six nodes. Point at `If Inventory Above 70%`
+and its two legs. Open the bytecode disclosure and point at the leading `23`.
+Line: "Branching on the trade is one thing; branching on *state* needs an
+instruction that doesn't exist. So we wrote it. Opcode 0x23 asks 'am I holding
+more than 70% ETH?' — below, accumulate at five basis points; above, flip to
+distributing at fifty. That's our bytecode, and 0x23 is our opcode, running on
+1inch's VM."
 
-### Beat 3 — Trade against it, live (1:40–2:30)
-Screen: detail page, "Execute test swap" panel; execute a taker swap.
-The activity feed pulses, fill appears, counters move. Execute a second,
-larger swap in the opposite balance direction.
-Line: "I'll play the taker. Watch the dashboard — that pulse is the swap
-landing on-chain, indexed and streamed back in about a second. Volume, fills,
-captured edge: everything you see is live chain data, nothing is mocked."
+### Beat 3 — Ship it (1:40–2:00)
+Screen: Ship strategy → lands on the Dashboard, new card beside the seed one.
+Line: "One signature, no deposit. My tokens haven't moved — Aqua just recorded a
+budget it can draw on when a trade actually executes."
 
-### Beat 4 — Drift & rebalance (2:30–3:20)
-Screen: inventory gauge amber after the swaps. Open Rebalance sheet: proposed
-corrective swap at best market rate, post-trade preview → confirm → gauge
-back to green.
-Line: "Selling all day leaves you lopsided. The skew block softens it; what
-remains, I fix in one click — the app routes the corrective trade at the best
-market price. Compose, observe, correct: the full loop, no code."
+### Beat 4 — The state machine flips, on-chain (2:00–2:50)
+**The money shot.** Screen: test-swap panel on the new card.
+1. Quote 1 WETH → say the number out loud.
+2. Swap 6 WETH → balances move, the inventory bar crosses 70%.
+3. Quote 1 WETH again → visibly worse.
+Line: "I'll play the counterparty. First quote, accumulation mode. Now I sell it
+six ETH — watch the inventory bar cross seventy percent. Same quote again, and
+the price is worse: the strategy took the other branch. That decision happened
+inside the VM, on-chain, in our own instruction."
 
-### Beat 5 — Close (3:20–3:50)
-Screen: public strategy page + quick pan over the repo README.
-Line: "Every strategy has a public page anyone can audit. Under the hood:
-strategies compile to 1inch SwapVM programs on Aqua, the live data is a
-Substreams-powered subgraph — the first indexer for Aqua, reusable by anyone —
-and rebalancing routes through the Uniswap API. Bacalhau: liquidity
-strategies for people who don't write Solidity."
+### Beat 5 — Correct the drift (2:50–3:20)
+Screen: Wallet inventory banner amber → Preview (Uniswap route appears) →
+Rebalance → gauge moves.
+Line: "Trading all day leaves me lopsided. The Uniswap API quotes and routes the
+corrective swap, and it executes against real Base liquidity — that's a live
+route, not a mock."
+
+### Beat 6 — Close (3:20–3:45)
+Screen: the "Indexed by The Graph" panel, then a quick pan over the README.
+Line: "Aqua had no indexer, so we built one: a reusable Substreams module and a
+subgraph over the same events, both live. Strategies compile to 1inch SwapVM
+programs with two instructions of our own, market truth comes from the Uniswap
+API, and observability from The Graph. Bacalhau: liquidity strategies for people
+who don't write Solidity."
 
 ## Judge Q&A prep (live table only)
 
 Likely questions, one-line answers ready:
-- "What exactly is your custom instruction?" → Inventory Skew: price tilt
-  proportional to distance from target inventory; show the block's params.
-- "Is the dashboard real data?" → yes: open the subgraph playground and run
-  the same query judges can run.
+- "What are your custom instructions?" → two: **0x22 Inventory Skew** (price
+  tilt proportional to distance from the target split) and **0x23 If Inventory
+  Above** (the state branch). Both appended to the official Aqua opcode table,
+  never inserted, so existing bytecode keeps its meaning.
+- "Why is the dashboard showing different numbers from the canvas?" → two
+  chains on purpose: the live demo runs on a local Base fork, while the Graph
+  panel indexes our real Base Sepolia deployment. An indexer cannot see anvil.
+- "Is the indexed data real?" → yes, and we generated the on-chain traffic
+  ourselves because Aqua has no organic testnet volume; offer the Studio
+  endpoint so they can run the query themselves.
+- "Did you really compose two Graph products?" → Substreams module plus a
+  subgraph over the same events. Be upfront: we planned a substreams-powered
+  subgraph, and Studio now rejects those outright — quote the error.
+- "Aren't loops missing?" → deliberate. The Aqua opcode table has no arithmetic
+  or register comparison, so a back edge could never compute an exit condition;
+  the validator rejects cycles. Backward jumps in the emitted bytecode are joins.
+- "How do you know the bytecode is right?" → a golden vector pinned identically
+  in Solidity and TypeScript, plus a test that walks every jump target and
+  proves it lands on an instruction boundary.
 - "What happens with two strategies on the same funds?" → that's Aqua's core
-  feature: same wallet balance can back both; show two strategies sharing one
-  wallet if asked.
-- "Why would 1inch want this?" → it's the missing application layer their
-  track is asking for + a reusable indexer their ecosystem lacks.
+  feature: the same wallet balance backs both; show it if asked.
+- "Why would 1inch want this?" → the missing application layer their track asks
+  for, plus a reusable indexer their ecosystem lacks.
 
 ## Recording rules
 
