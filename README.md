@@ -5,6 +5,12 @@
 Compose your own market-making strategy from visual blocks, ship it from your
 wallet, and watch it live — no code, no deployed contracts.
 
+**Live demo: <https://bacalhau.pages.dev>** — fully interactive: every ship,
+swap and dock is a real Base Sepolia transaction from a shared throwaway
+wallet, indexed by [our subgraph](https://api.studio.thegraph.com/query/1756929/bacalhau-aqua/v0.0.4)
+within the minute. (Rebalance alone needs the local fork: the Sepolia mock
+tokens have no Uniswap pool to route through.)
+
 Built at ETHGlobal Lisbon 2026.
 
 ## What it is
