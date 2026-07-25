@@ -5,7 +5,7 @@
 Compose your own market-making strategy from visual blocks, ship it from your
 wallet, and watch it live — no code, no deployed contracts.
 
-**Live demo: <https://bacalhau.pages.dev>** — fully interactive: every ship,
+**Live demo: <https://qilinswap.pages.dev>** — fully interactive: every ship,
 swap and dock is a real Base Sepolia transaction from a shared throwaway
 wallet, indexed by [our subgraph](https://api.studio.thegraph.com/query/1756929/bacalhau-aqua/v0.0.4)
 within the minute. (Rebalance alone needs the local fork: the Sepolia mock
@@ -108,7 +108,7 @@ and only adds credentials (`.github/workflows/deploy.yml`). It reads:
 | `LLM_MODEL`             | model id; defaults to `gpt-4o-mini`               |
 | `GRAPH_API_KEY`         | The Graph gateway key for the copilot's Subgraph MCP session |
 | `GRAPH_SUBGRAPH_URL`    | Studio query endpoint for the copilot's subgraph tool |
-| `CF_PAGES_PROJECT`      | Pages project name, defaults to `bacalhau`        |
+| `CF_PAGES_PROJECT`      | Pages project name, defaults to `qilinswap`        |
 
 The Uniswap Trading API sends no CORS headers and its key must not reach the
 browser, so every `/uniswap/*` call goes through a same-origin proxy that

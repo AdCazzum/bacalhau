@@ -2,7 +2,7 @@
 
 The video and the live pitch are now DIFFERENT cuts of the same material:
 
-- **Video**: recorded entirely on the public site (bacalhau.pages.dev). Every
+- **Video**: recorded entirely on the public site (qilinswap.pages.dev). Every
   transaction shown is a real Base Sepolia transaction a judge can replay
   themselves one minute after watching. No rebalance beat — it needs the local
   fork, and one environment per video keeps the story honest.
@@ -12,7 +12,7 @@ The video and the live pitch are now DIFFERENT cuts of the same material:
 
 ## Cast & setup (before recording)
 
-- Record on **https://bacalhau.pages.dev** — NOT the local stack. The header
+- Record on **https://qilinswap.pages.dev** — NOT the local stack. The header
   must read "Base Sepolia · shared demo wallet"; that label is part of the
   pitch.
 - Open the Dashboard first. The wallet is shared: if strangers' strategies are
@@ -92,7 +92,7 @@ rows. Don't trust the dashboard — check it."
 Screen: quick pan over the README.
 Line: "Strategies compile to 1inch SwapVM programs with two instructions of our
 own, market truth comes from the Uniswap API, observability from The Graph —
-and everything you just saw is live at bacalhau.pages.dev. QilinSwap: liquidity
+and everything you just saw is live at qilinswap.pages.dev. QilinSwap: liquidity
 strategies for people who don't write Solidity."
 
 ## Live pitch only — the rebalance beat

@@ -125,7 +125,7 @@
             name = "bacalhau-deploy";
             runtimeInputs = [ pkgs.wrangler ];
             text = ''
-              project="''${CF_PAGES_PROJECT:-bacalhau}"
+              project="''${CF_PAGES_PROJECT:-qilinswap}"
               branch="''${CF_PAGES_BRANCH:-main}"
 
               # Keep the worker's secrets in step with the deploy when they are
