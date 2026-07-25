@@ -118,8 +118,22 @@ Only takers holding at least X of a given token can fill (allowlist-by-stake).
 The demo uses **Self-balancing MM**: it exercises the custom block, the fee,
 the live dashboard and the rebalance flow in one strategy.
 
-## Out of scope (day 1)
+## Scope change: branching is in
 
-TWAP execution, conditional jumps/branching, multi-strategy nesting,
-oracle-triggered invalidation. Listed in the UI as "coming soon" only if the
-palette looks empty without them — otherwise omitted entirely (no dead UI).
+Conditional jumps were listed out of scope here. They are now the centre of the
+product: SwapVM lets any instruction rewrite the program counter, so a strategy
+is a control-flow graph, and the strategies worth showing — asymmetric two-sided
+quoting, an accumulate/distribute state machine — cannot be expressed without a
+fork. The canvas is a node graph (`app/src/ui/Canvas.tsx`), the compiler is a
+two-pass assembler (`app/src/compiler/graph.ts`), and branching uses
+`_jumpIfTokenIn` (0x0b) plus our second custom opcode
+`_jumpIfInventoryAboveXD` (0x23).
+
+## Still out of scope
+
+TWAP execution, multi-strategy nesting, oracle-triggered invalidation, and
+**loops**: the Aqua opcode table has no arithmetic or register comparison, so a
+back edge cannot have a computed exit condition and would only burn gas. The
+validator rejects cycles for that reason. (Backward jumps do appear in emitted
+bytecode where two legs rejoin a shared node — that is a join, not a loop, and
+the graph stays acyclic.)

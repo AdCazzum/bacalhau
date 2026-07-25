@@ -22,11 +22,24 @@ Uniswap. Three sponsors: 1inch (core), The Graph (observability), Uniswap
   - `InventorySkew.sol` — custom SwapVM opcode 0x22 (self-balancing price
     tilt). `BacalhauRouter.sol` — modified-SwapVM redeploy with skew appended.
   - Golden tests (template→bytecode parity) + 5 skew tests. **forge 8/8.**
-- **TS compiler** (`app/src/compiler/`) — canvas blocks → SwapVM bytecode,
-  byte-identical to Solidity golden vector. **vitest 11/11.**
-- **Frontend** (`app/`, Vite+React+viem): Canvas (block palette, pipeline,
-  live price curve + Uniswap market overlay), Dashboard (strategies from Aqua
-  events, live feed, test-swap, dock, wallet-inventory gauge), demo wallet
+- **Strategy graph** — SwapVM is a machine whose instructions rewrite the PC, so
+  a strategy is a control-flow graph, not a pipeline:
+  - `app/src/compiler/graph.ts` — two-pass assembler. Emits labels only at
+    instruction boundaries (a target inside an args blob would make the VM run
+    argument bytes as opcodes), enforces the audited order (modifiers/fees
+    before the swap, exactly one pricing node per path, inventory branches
+    before anything that shifts balances) and rejects cycles.
+  - `contracts/src/InventoryBranch.sol` — second custom opcode 0x23,
+    `_jumpIfInventoryAboveXD`: direction-independent state predicate.
+  - Nine blocks incl. Price Range (xycConcentrate), Flow Decay (decay),
+    Holder Gate; two branch kinds (direction, inventory).
+  - Six one-click templates (`app/src/lib/templates.ts`), four of them not
+    expressible in a constant-product pool.
+- **Frontend** (`app/`, Vite+React+viem): Canvas is a React Flow node editor
+  with typed then/else ports, live validation badges, live-path highlighting
+  (it resolves which leg the VM would take for the previewed direction) and a
+  bytecode panel; Dashboard (strategies from Aqua events, live feed, test-swap,
+  dock, wallet-inventory gauge, indexed-by-The-Graph panel); demo wallet
   (anvil acct #0, PoC — no wallet extension).
 - **Uniswap** ✅ CORE: market reference price (canvas overlay + value gauge)
   AND rebalance execution — quote via Trading API, execute real swap via

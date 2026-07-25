@@ -32,8 +32,9 @@ export const AQUA_OPCODES = {
   peggedSwapGrowPriceRange2D: 0x1f,
   extruction: 0x20,
   onlyTxOriginTokenBalanceNonZero: 0x21,
-  /** Bacalhau custom instruction, appended after the 34 stock opcodes. */
+  /** Bacalhau custom instructions, appended after the 34 stock opcodes. */
   inventorySkew: 0x22,
+  inventoryBranch: 0x23,
 } as const;
 
 /** Fee/skew basis: matches `BPS = 1e9` in swap-vm/src/instructions/Fee.sol. */

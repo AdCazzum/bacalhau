@@ -10,6 +10,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@xyflow/react": "^12.11.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "viem": "^2.38.0"
