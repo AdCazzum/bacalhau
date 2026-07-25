@@ -44,11 +44,20 @@ export interface Deployment {
   seedStrategyHash: Hex;
 }
 
+const NO_DEPLOYMENT = "No local deployment found — run ./scripts/demo-env.sh, then reload.";
+
 /** Written by scripts/demo-env.sh into app/public/local.json. */
 export async function loadDeployment(): Promise<Deployment> {
   const res = await fetch("/local.json");
-  if (!res.ok) {
-    throw new Error("deployments/local.json not found - run ./scripts/demo-env.sh first");
+  // The dev server answers unknown paths with index.html (SPA fallback), so a
+  // missing file arrives as 200 + HTML rather than a 404. Parse defensively:
+  // otherwise the first thing a fresh clone shows is a JSON syntax error.
+  if (!res.ok) throw new Error(NO_DEPLOYMENT);
+  const body = await res.text();
+  if (!body.trimStart().startsWith("{")) throw new Error(NO_DEPLOYMENT);
+  try {
+    return JSON.parse(body) as Deployment;
+  } catch {
+    throw new Error("local.json is not valid JSON — re-run ./scripts/demo-env.sh.");
   }
-  return res.json();
 }

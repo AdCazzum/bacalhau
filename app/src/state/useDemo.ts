@@ -41,6 +41,11 @@ export interface DemoState {
 
 const POLL_MS = 2000;
 
+/** Error text without the "Error:" prefix `String(e)` would prepend. */
+function msg(e: unknown): string {
+  return e instanceof Error ? e.message : String(e);
+}
+
 export function useDemo(): DemoState {
   const [deployment, setDeployment] = useState<Deployment | null>(null);
   const [strategies, setStrategies] = useState<Strategy[]>([]);
@@ -51,7 +56,7 @@ export function useDemo(): DemoState {
   const busy = useRef(false);
 
   useEffect(() => {
-    loadDeployment().then(setDeployment).catch((e) => setError(String(e)));
+    loadDeployment().then(setDeployment).catch((e) => setError(msg(e)));
   }, []);
 
   useEffect(() => {
@@ -70,7 +75,7 @@ export function useDemo(): DemoState {
         setWallet(wallet);
         setError(null);
       })
-      .catch((e) => setError(String(e)))
+      .catch((e) => setError(msg(e)))
       .finally(() => {
         busy.current = false;
       });
