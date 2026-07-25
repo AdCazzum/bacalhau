@@ -17,6 +17,18 @@ export function parseAmount(value: string, decimals: number): bigint {
 }
 
 /**
+ * Decimals for the Base Sepolia demo pair (contracts/deployments/sepolia.json),
+ * the tokens the subgraph reports. Returns null for anything else so amounts
+ * degrade to raw units instead of being silently mis-scaled.
+ */
+export function indexedDecimals(token: string): number | null {
+  const t = token.toLowerCase();
+  if (t === "0x0f599727f37d4fc8ab5dbd3afe86c3ebf4a892f7") return WETH_DECIMALS;
+  if (t === "0xb6ec46c767b71a5aa4b51bad4a40827560d63e55") return USDC_DECIMALS;
+  return null;
+}
+
+/**
  * Value of a WETH balance in USDC's smallest unit, given a market price
  * expressed as USDC(1e18-scaled) per WETH. Normalizes the 18/6 mismatch so
  * it can be summed with a raw USDC balance.

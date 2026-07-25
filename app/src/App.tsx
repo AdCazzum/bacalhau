@@ -4,13 +4,14 @@ import { canWrite } from "./lib/chain";
 import { Canvas } from "./ui/Canvas";
 import { Dashboard } from "./ui/Dashboard";
 import { Hero } from "./ui/Hero";
+import { Indexed } from "./ui/Indexed";
 import { useDemo } from "./state/useDemo";
 
 export function App() {
   const demo = useDemo();
   // Compose first: the canvas is the product, and landing on the dashboard hid
   // the templates behind a tab nobody thought to click.
-  const [view, setView] = useState<"canvas" | "dashboard">("canvas");
+  const [view, setView] = useState<"canvas" | "dashboard" | "indexed">("canvas");
 
   return (
     <div className="app">
@@ -29,6 +30,12 @@ export function App() {
             onClick={() => setView("dashboard")}
           >
             Dashboard
+          </button>
+          <button
+            className={view === "indexed" ? "tab active" : "tab"}
+            onClick={() => setView("indexed")}
+          >
+            Indexed
           </button>
         </nav>
         <span className="net">
@@ -50,11 +57,9 @@ export function App() {
 
       {demo.error && <div className="banner error">{demo.error}</div>}
 
-      {view === "canvas" ? (
-        <Canvas demo={demo} onShipped={() => setView("dashboard")} />
-      ) : (
-        <Dashboard demo={demo} />
-      )}
+      {view === "canvas" && <Canvas demo={demo} onShipped={() => setView("dashboard")} />}
+      {view === "dashboard" && <Dashboard demo={demo} />}
+      {view === "indexed" && <Indexed />}
     </div>
   );
 }

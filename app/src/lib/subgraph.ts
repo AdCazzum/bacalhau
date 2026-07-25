@@ -31,6 +31,12 @@ export function hasSubgraph(): boolean {
   return endpoint() !== null;
 }
 
+/** The endpoint and query, shown verbatim on the Indexed page so a reader can
+ *  paste them into the Studio playground and get the same rows back. */
+export function subgraphEndpoint(): string | null {
+  return endpoint();
+}
+
 export interface IndexedStrategy {
   id: string;
   maker: string;
@@ -59,7 +65,7 @@ export interface IndexedState {
   indexedBlock: number | null;
 }
 
-const QUERY = `{
+export const QUERY = `{
   strategies(first: 50, orderBy: shippedAt, orderDirection: desc) {
     id maker program status shippedAt fillCount totalPulled totalPushed
   }

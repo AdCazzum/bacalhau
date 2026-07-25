@@ -409,6 +409,13 @@ export function Canvas({ demo, onShipped }: CanvasProps) {
         </div>
 
         <CurveChart points={curve} market={marketPrice} />
+        {/* Where each half of this panel comes from — the three integrations,
+            named at the spot the eye already rests. */}
+        <p className="provenance">
+          <span>price <b>Uniswap</b></span>
+          <span>execution <b>Aqua</b></span>
+          <span>history <b>The Graph</b></span>
+        </p>
 
         <p className="summary">{summary}</p>
 
@@ -484,7 +491,20 @@ function CurveChart({ points, market }: { points: { size: number; price: number 
     <svg className="chart" viewBox={`0 0 ${w} ${h}`}>
       <path d={path} fill="none" stroke="var(--aqua)" strokeWidth="2" />
       {marketY !== null && (
-        <line x1="0" y1={marketY} x2={w} y2={marketY} className="axis market" strokeDasharray="4 3" />
+        <>
+          <line x1="0" y1={marketY} x2={w} y2={marketY} className="axis market" strokeDasharray="4 3" />
+          {/* Name the source: this line is the only Uniswap data on the canvas.
+              Flip below the line when it sits high, so the label never lands on
+              the chart title or outside the box. */}
+          <text
+            x={w - 4}
+            y={marketY < 22 ? marketY + 12 : marketY - 5}
+            textAnchor="end"
+            className="axis market"
+          >
+            market · Uniswap
+          </text>
+        </>
       )}
       <text x="4" y="12" className="axis">
         execution price vs trade size

@@ -4,7 +4,7 @@ import { parseUnits, type Address } from "viem";
 import { aquaAbi, erc20Abi, routerAbi, takerAbi } from "../lib/abi";
 import { canWrite, publicClient, walletClient } from "../lib/chain";
 import { takerData } from "../lib/order";
-import { fmtAmount, USDC_DECIMALS, WETH_DECIMALS, wethValueInUsdc } from "../lib/units";
+import { fmtAmount, indexedDecimals, USDC_DECIMALS, WETH_DECIMALS, wethValueInUsdc } from "../lib/units";
 import type { DemoState, Strategy } from "../state/useDemo";
 import { useMarketPrice } from "../state/useMarketPrice";
 import { useIndexed } from "../state/useIndexed";
@@ -23,11 +23,17 @@ export function Dashboard({ demo }: DashboardProps) {
 
   return (
     <div className="dashboard">
+      {/* The wallet is not a strategy: it is the account both strategies draw
+          on, so it sits above the list rather than inside it. */}
+      {demo.wallet && marketState.market && (
+        <section className="inventory">
+          <h2>Wallet inventory</h2>
+          <WalletInventory demo={demo} wallet={demo.wallet} marketPrice={marketState.market.price} />
+        </section>
+      )}
+
       <section className="strategies">
         <h2>Strategies</h2>
-        {demo.wallet && marketState.market && (
-          <WalletInventory demo={demo} wallet={demo.wallet} marketPrice={marketState.market.price} />
-        )}
         {demo.strategies.length === 0 && (
           <div className="empty">No strategies yet — compose one on the Canvas.</div>
         )}
@@ -93,7 +99,7 @@ function IndexedPanel() {
         <>
           <h3 className="sub">Recent indexed movements</h3>
           {data.fills.slice(0, 6).map((f) => {
-            const decimals = knownDecimals(f.token);
+            const decimals = indexedDecimals(f.token);
             return (
               <div key={f.id} className="fill">
                 <span className="dir">{f.direction === "PULL" ? "maker → taker" : "taker → maker"}</span>
@@ -110,18 +116,6 @@ function IndexedPanel() {
       )}
     </div>
   );
-}
-
-/**
- * Token decimals for the Base Sepolia demo pair (deployments/sepolia.json).
- * Returns null for anything else so amounts degrade to raw units instead of
- * being silently mis-scaled.
- */
-function knownDecimals(token: string): number | null {
-  const t = token.toLowerCase();
-  if (t === "0x0f599727f37d4fc8ab5dbd3afe86c3ebf4a892f7") return WETH_DECIMALS;
-  if (t === "0xb6ec46c767b71a5aa4b51bad4a40827560d63e55") return USDC_DECIMALS;
-  return null;
 }
 
 function StrategyCard({ strategy, demo, marketPrice }: { strategy: Strategy; demo: DemoState; marketPrice: bigint | null }) {
@@ -216,7 +210,7 @@ function WalletInventory({
   return (
     <div className={drifted ? "wallet-inv rebalance" : "wallet-inv"}>
       <header>
-        Wallet inventory: {wethShare.toFixed(0)}% WETH / {(100 - wethShare).toFixed(0)}% USDC
+        {wethShare.toFixed(0)}% WETH / {(100 - wethShare).toFixed(0)}% USDC
       </header>
       <div className="gauge">
         <div className="gauge-fill" style={{ width: `${Math.min(wethShare, 100)}%` }} />
@@ -232,10 +226,19 @@ function WalletInventory({
             restore ~50/50.
           </p>
           {plan && (
-            <p className="quote">
-              → receive ~{fmtAmount(plan.expectedBuyAmount, wethOverweight ? USDC_DECIMALS : WETH_DECIMALS)}{" "}
-              {wethOverweight ? "USDC" : "WETH"} · route {plan.routeString || "best"}
-            </p>
+            <>
+              <p className="quote">
+                → receive ~{fmtAmount(plan.expectedBuyAmount, wethOverweight ? USDC_DECIMALS : WETH_DECIMALS)}{" "}
+                {wethOverweight ? "USDC" : "WETH"}
+              </p>
+              {/* The route and its fee tier are the API's answer, not ours:
+                  naming them is what distinguishes routing from a bare price. */}
+              <p className="provenance">
+                <span>route <b>{plan.routeString || "best"}</b></span>
+                <span>fee tier <b>{(plan.feeTier / 10_000).toFixed(2)}%</b></span>
+                <span>quoted by <b>Uniswap Trading API</b></span>
+              </p>
+            </>
           )}
           <div className="row">
             <button onClick={preview} disabled={state !== "idle"}>
