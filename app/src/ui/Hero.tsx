@@ -1,24 +1,29 @@
 /**
  * Hero banner on the key visual (palette strip cropped off). The banner opens
- * at the art's own aspect ratio (capped at 62vh) so head and sponsor marks are
- * both in frame, then collapses into the slim sticky topbar on scroll. Height
- * is measured on mount and on resize; the scroll listener is rAF-throttled and
+ * at the art's own aspect ratio, measured from the hero's width, so head and
+ * sponsor marks are both in frame; on scroll it collapses into the slim
+ * sticky topbar, the shrinking container cropping the fixed-height art.
+ * Height is measured on mount and on resize; the scroll listener is rAF-throttled and
  * drives transform/opacity only, so the collapse never janks.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import keyart from "../assets/keyart.jpg";
 
 const ART_RATIO = 2752 / 1142;
 
-const naturalHeight = () =>
-  Math.round(Math.min(window.innerWidth / ART_RATIO, window.innerHeight * 0.62));
-
 export function Hero() {
+  const box = useRef<HTMLDivElement>(null);
   const [y, setY] = useState(0);
-  const [h, setH] = useState(naturalHeight);
+  const [h, setH] = useState(0);
+
+  // Full art ratio from the hero's own width (the .app container is narrower
+  // than the viewport): any mismatch or height cap makes `cover` crop the art.
+  const naturalHeight = () =>
+    Math.round((box.current?.offsetWidth ?? window.innerWidth) / ART_RATIO);
 
   useEffect(() => {
+    setH(naturalHeight());
     let raf = 0;
     const onScroll = () => {
       cancelAnimationFrame(raf);
@@ -34,10 +39,10 @@ export function Hero() {
     };
   }, []);
 
-  const gone = Math.min(y / h, 1); // 0 → fully shown, 1 → collapsed
+  const gone = h > 0 ? Math.min(y / h, 1) : 0; // 0 → fully shown, 1 → collapsed
 
   return (
-    <div className="hero" aria-hidden style={{ height: Math.max(h - y * 0.85, 0) }}>
+    <div ref={box} className="hero" aria-hidden style={{ height: h > 0 ? Math.max(h - y * 0.85, 0) : undefined }}>
       {/* Fixed at natural height: the shrinking container crops it from the
           bottom instead of rescaling it. */}
       <img
