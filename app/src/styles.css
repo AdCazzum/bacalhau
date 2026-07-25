@@ -56,7 +56,7 @@ h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1.2px; color: v
   position: absolute; inset: 0; width: 100%; height: 100%;
   will-change: transform, opacity;
 }
-.hero-art { object-fit: cover; object-position: center 88%; display: block; }
+.hero-art { object-fit: cover; object-position: center; display: block; }
 .hero > svg { pointer-events: none; }
 .hero-title {
   position: absolute; left: 28px; bottom: 18px; z-index: 2;

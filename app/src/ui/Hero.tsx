@@ -1,42 +1,49 @@
 /**
- * Hero banner on the key visual (palette strip cropped off). The art drifts
- * slightly slower than the page and fades, so the banner collapses into the
- * slim sticky topbar. Framed low (object-position 62%) so the sponsor marks
- * in the art's lower half stay visible. One rAF-throttled scroll listener;
- * transform/opacity only, so the collapse never janks.
+ * Hero banner on the key visual (palette strip cropped off). The banner opens
+ * at the art's own aspect ratio (capped at 62vh) so head and sponsor marks are
+ * both in frame, then collapses into the slim sticky topbar on scroll. Height
+ * is measured on mount and on resize; the scroll listener is rAF-throttled and
+ * drives transform/opacity only, so the collapse never janks.
  */
 import { useEffect, useState } from "react";
 
 import keyart from "../assets/keyart.jpg";
 
-const HERO_H = 320; // px, matches .hero height in styles.css
+const ART_RATIO = 2752 / 1142;
+
+const naturalHeight = () =>
+  Math.round(Math.min(window.innerWidth / ART_RATIO, window.innerHeight * 0.62));
 
 export function Hero() {
   const [y, setY] = useState(0);
+  const [h, setH] = useState(naturalHeight);
 
   useEffect(() => {
     let raf = 0;
     const onScroll = () => {
       cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => setY(Math.min(window.scrollY, HERO_H)));
+      raf = requestAnimationFrame(() => setY(Math.min(window.scrollY, naturalHeight())));
     };
+    const onResize = () => setH(naturalHeight());
     window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onResize);
     return () => {
       window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onResize);
       cancelAnimationFrame(raf);
     };
   }, []);
 
-  const gone = y / HERO_H; // 0 → fully shown, 1 → collapsed
-  const layer = (speed: number) => ({
-    transform: `translateY(${y * speed}px)`,
-    opacity: 1 - gone * (0.3 + speed),
-  });
+  const gone = Math.min(y / h, 1); // 0 → fully shown, 1 → collapsed
 
   return (
-    <div className="hero" aria-hidden style={{ height: HERO_H - y * 0.85 }}>
-      {/* The key visual, slow plane; sponsors sit in its lower half. */}
-      <img src={keyart} alt="" className="hero-art" style={layer(0.15)} />
+    <div className="hero" aria-hidden style={{ height: Math.max(h - y * 0.85, 0) }}>
+      <img
+        src={keyart}
+        alt=""
+        className="hero-art"
+        style={{ transform: `translateY(${y * 0.15}px)`, opacity: 1 - gone * 0.45 }}
+      />
 
       <div className="hero-title" style={{ opacity: 1 - gone * 1.6 }}>
         <h1>Bacalhau</h1>
