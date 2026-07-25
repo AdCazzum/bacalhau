@@ -3,6 +3,7 @@ import { parseUnits, type Address } from "viem";
 
 import { aquaAbi, erc20Abi, routerAbi, takerAbi } from "../lib/abi";
 import { canWrite, publicClient, walletClient } from "../lib/chain";
+import { strategyName } from "../lib/name";
 import { takerData } from "../lib/order";
 import { fmtAmount, indexedDecimals, USDC_DECIMALS, WETH_DECIMALS, wethValueInUsdc } from "../lib/units";
 import type { DemoState, Strategy } from "../state/useDemo";
@@ -88,7 +89,8 @@ function IndexedPanel() {
       {data?.strategies.map((s) => (
         <div key={s.id} className="fill">
           <span className="dir">
-            {s.id.slice(0, 10)}… <span className={`pill ${s.status.toLowerCase()}`}>{s.status}</span>
+            {strategyName(s.id)} <code>{s.id.slice(0, 10)}…</code>{" "}
+            <span className={`pill ${s.status.toLowerCase()}`}>{s.status}</span>
           </span>
           <span>
             {s.fillCount} {s.fillCount === 1 ? "swap" : "swaps"} indexed
@@ -127,7 +129,10 @@ function StrategyCard({ strategy, demo, marketPrice }: { strategy: Strategy; dem
   return (
     <div className={`card ${strategy.status}`}>
       <header>
-        <strong>WETH/USDC · {strategy.hash.slice(0, 10)}…</strong>
+        <strong>
+          {strategyName(strategy.hash)}{" "}
+          <span className="hash">WETH/USDC · {strategy.hash.slice(0, 10)}…</span>
+        </strong>
         <span className={`pill ${strategy.status}`}>{strategy.status}</span>
       </header>
       <div className="balances">

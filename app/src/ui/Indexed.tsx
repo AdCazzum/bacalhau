@@ -8,6 +8,7 @@
  * from the indexer, which is the whole point of showing it separately from the
  * dashboard's RPC-fed view.
  */
+import { strategyName } from "../lib/name";
 import { QUERY, subgraphEndpoint } from "../lib/subgraph";
 import { fmtAmount, indexedDecimals, WETH_DECIMALS } from "../lib/units";
 import { useIndexed } from "../state/useIndexed";
@@ -69,7 +70,9 @@ export function Indexed() {
           <tbody>
             {data.strategies.map((s) => (
               <tr key={s.id}>
-                <td><code>{s.id.slice(0, 14)}…</code></td>
+                {/* The name is derived from the id, not a field the subgraph
+                    returns - the hash stays the primary identifier. */}
+                <td><code>{s.id.slice(0, 14)}…</code> <small>{strategyName(s.id)}</small></td>
                 <td><code>{s.maker.slice(0, 10)}…</code></td>
                 <td><span className={`pill ${s.status.toLowerCase()}`}>{s.status}</span></td>
                 <td>{s.fillCount}</td>
@@ -100,7 +103,7 @@ export function Indexed() {
                 <td>{new Date(Number(f.timestamp) * 1000).toLocaleString()}</td>
                 <td>{f.direction === "PULL" ? "maker → taker" : "taker → maker"}</td>
                 <td>{amount(f.token, f.amount)}</td>
-                <td><code>{f.strategy.id.slice(0, 12)}…</code></td>
+                <td><code>{f.strategy.id.slice(0, 12)}…</code> <small>{strategyName(f.strategy.id)}</small></td>
                 <td><code>{f.txHash.slice(0, 12)}…</code></td>
               </tr>
             ))}
