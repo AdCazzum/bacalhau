@@ -7,7 +7,9 @@ import { useDemo } from "./state/useDemo";
 
 export function App() {
   const demo = useDemo();
-  const [view, setView] = useState<"canvas" | "dashboard">("dashboard");
+  // Compose first: the canvas is the product, and landing on the dashboard hid
+  // the templates behind a tab nobody thought to click.
+  const [view, setView] = useState<"canvas" | "dashboard">("canvas");
 
   return (
     <div className="app">
