@@ -38,11 +38,13 @@ export function Hero() {
 
   return (
     <div className="hero" aria-hidden style={{ height: Math.max(h - y * 0.85, 0) }}>
+      {/* Fixed at natural height: the shrinking container crops it from the
+          bottom instead of rescaling it. */}
       <img
         src={keyart}
         alt=""
         className="hero-art"
-        style={{ transform: `translateY(${y * 0.15}px)`, opacity: 1 - gone * 0.45 }}
+        style={{ height: h, transform: `translateY(${y * 0.15}px)`, opacity: 1 - gone * 0.45 }}
       />
 
       <div className="hero-title" style={{ opacity: 1 - gone * 1.6 }}>
