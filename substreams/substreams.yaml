@@ -11,6 +11,7 @@ package:
 protobuf:
   files:
     - bacalhau/v1/aqua.proto
+    - sf/substreams/sink/entity/v1/entity.proto
   importPaths:
     - ./proto
 
@@ -35,3 +36,11 @@ modules:
       - source: sf.ethereum.type.v2.Block
     output:
       type: proto:bacalhau.v1.Events
+
+  - name: graph_out
+    kind: map
+    initialBlock: 44584712
+    inputs:
+      - map: map_events
+    output:
+      type: proto:sf.substreams.sink.entity.v1.EntityChanges

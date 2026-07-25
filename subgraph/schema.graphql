@@ -1,0 +1,59 @@
+"""
+A liquidity strategy shipped on Aqua through a SwapVM app (BacalhauRouter).
+The id is the Aqua strategy hash.
+"""
+type Strategy @entity(immutable: false) {
+  id: ID!
+  maker: Bytes!
+  app: Bytes!
+  "SwapVM program bytecode the maker composed on the canvas."
+  program: Bytes!
+  status: StrategyStatus!
+  shippedAt: BigInt!
+  shippedTx: Bytes!
+  dockedAt: BigInt
+  "Number of swaps that touched this strategy (pull events)."
+  fillCount: Int!
+  "Cumulative amounts moved, per direction."
+  totalPulled: BigInt!
+  totalPushed: BigInt!
+  fills: [Fill!]! @derivedFrom(field: "strategy")
+}
+
+enum StrategyStatus {
+  LIVE
+  DOCKED
+}
+
+"""
+A token movement between a maker's wallet and a taker, recorded by Aqua.
+PULL = tokens left the maker (taker received); PUSH = tokens reached the maker.
+"""
+type Fill @entity(immutable: true) {
+  id: ID!
+  strategy: Strategy!
+  direction: FillDirection!
+  maker: Bytes!
+  app: Bytes!
+  token: Bytes!
+  amount: BigInt!
+  blockNumber: BigInt!
+  timestamp: BigInt!
+  txHash: Bytes!
+  logIndex: Int!
+}
+
+enum FillDirection {
+  PULL
+  PUSH
+}
+
+"""
+Protocol-wide counters, id is always "aqua".
+"""
+type Protocol @entity(immutable: false) {
+  id: ID!
+  strategyCount: Int!
+  liveStrategyCount: Int!
+  fillCount: Int!
+}

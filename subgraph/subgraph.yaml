@@ -1,0 +1,20 @@
+specVersion: 1.5.0
+description: >
+  First indexer for 1inch Aqua strategies. Consumes the bacalhau_aqua
+  Substreams package (Shipped/Docked/Pulled/Pushed) and materializes
+  strategies and fills for the Bacalhau studio dashboard.
+repository: https://github.com/AdCazzum/bacalhau
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: substreams
+    name: aqua
+    network: base-sepolia
+    source:
+      package:
+        moduleName: graph_out
+        file: ../substreams/bacalhau-aqua-v0.1.0.spkg
+      startBlock: 44584712
+    mapping:
+      apiVersion: 0.0.9
+      kind: substreams/graph-entities

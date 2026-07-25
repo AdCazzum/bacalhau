@@ -7,6 +7,8 @@ use substreams::errors::Error;
 use substreams::Hex;
 use substreams_ethereum::pb::eth::v2 as eth;
 use substreams_ethereum::Event;
+use substreams_entity_change::pb::entity::EntityChanges;
+use substreams_entity_change::tables::Tables;
 
 /// Parse `aqua=0x...` params into the Aqua contract address (lowercase, no 0x).
 fn aqua_address(params: &str) -> Vec<u8> {
@@ -82,4 +84,72 @@ fn map_events(params: String, block: eth::Block) -> Result<bacalhau::Events, Err
     }
 
     Ok(events)
+}
+
+/// Materialize the GraphQL entities (schema.graphql) from decoded events.
+/// Aggregates (fillCount, totals, protocol counters) are emitted as deltas so
+/// graph-node folds them across blocks.
+#[substreams::handlers::map]
+fn graph_out(events: bacalhau::Events) -> Result<EntityChanges, Error> {
+    let mut tables = Tables::new();
+
+    for e in events.shipped.iter() {
+        let m = e.meta.as_ref().unwrap();
+        tables
+            .create_row("Strategy", &e.strategy_hash)
+            .set("maker", &e.maker)
+            .set("app", &e.app)
+            .set("program", &e.strategy)
+            .set("status", "LIVE")
+            .set("shippedAt", m.block_timestamp)
+            .set("shippedTx", &m.tx_hash)
+            .set("fillCount", 0)
+            .set("totalPulled", substreams::scalar::BigInt::zero())
+            .set("totalPushed", substreams::scalar::BigInt::zero());
+        tables.update_row("Protocol", "aqua").set("strategyCount", 1);
+    }
+
+    for e in events.docked.iter() {
+        let m = e.meta.as_ref().unwrap();
+        tables
+            .update_row("Strategy", &e.strategy_hash)
+            .set("status", "DOCKED")
+            .set("dockedAt", m.block_timestamp);
+    }
+
+    for e in events.pulled.iter() {
+        fill_row(&mut tables, e.meta.as_ref().unwrap(), "PULL", &e.strategy_hash, &e.maker, &e.app, &e.token, &e.amount);
+    }
+
+    for e in events.pushed.iter() {
+        fill_row(&mut tables, e.meta.as_ref().unwrap(), "PUSH", &e.strategy_hash, &e.maker, &e.app, &e.token, &e.amount);
+    }
+
+    Ok(tables.to_entity_changes())
+}
+
+#[allow(clippy::too_many_arguments)]
+fn fill_row(
+    tables: &mut Tables,
+    m: &bacalhau::Meta,
+    direction: &str,
+    strategy_hash: &str,
+    maker: &str,
+    app: &str,
+    token: &str,
+    amount: &str,
+) {
+    let id = format!("{}-{}", m.tx_hash, m.log_index);
+    tables
+        .create_row("Fill", id)
+        .set("strategy", strategy_hash)
+        .set("direction", direction)
+        .set("maker", maker)
+        .set("app", app)
+        .set("token", token)
+        .set_bigint_or_zero("amount", &amount.to_string())
+        .set("blockNumber", m.block_number)
+        .set("timestamp", m.block_timestamp)
+        .set("txHash", &m.tx_hash)
+        .set("logIndex", m.log_index as i32);
 }

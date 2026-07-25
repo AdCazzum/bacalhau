@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+// Vendored copy of the substreams-entity-change schema (sink protocol
+// consumed by graph-node). Kept locally because the upstream .spkg import is
+// fetched over the network at pack time; field numbers here mirror the
+// substreams-entity-change 2.0 Rust types exactly, so the wire format is
+// identical.
+package sf.substreams.sink.entity.v1;
+
+message EntityChanges {
+  repeated EntityChange entity_changes = 5;
+}
+
+message EntityChange {
+  string entity = 1;
+  string id = 2;
+  // Deprecated, unused by graph-node.
+  uint64 ordinal = 3;
+  Operation operation = 4;
+  repeated Field fields = 5;
+
+  enum Operation {
+    OPERATION_UNSPECIFIED = 0;
+    OPERATION_CREATE = 1;
+    OPERATION_UPDATE = 2;
+    OPERATION_DELETE = 3;
+    OPERATION_FINAL = 4;
+  }
+}
+
+message Value {
+  oneof typed {
+    int32 int32 = 1;
+    string bigdecimal = 2;
+    string bigint = 3;
+    string string = 4;
+    string bytes = 5;
+    bool bool = 6;
+    int64 timestamp = 7;
+    Array array = 10;
+  }
+  reserved 8 to 9; // For future types
+}
+
+message Array {
+  repeated Value value = 1;
+}
+
+message Field {
+  string name = 1;
+  Value new_value = 3;
+  // Deprecated, unused by graph-node.
+  Value old_value = 5;
+}
