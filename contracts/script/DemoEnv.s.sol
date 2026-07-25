@@ -6,12 +6,10 @@ import { console2 } from "forge-std/console2.sol";
 
 import { Aqua } from "@1inch/aqua/src/Aqua.sol";
 import { ISwapVM } from "@1inch/swap-vm/src/interfaces/ISwapVM.sol";
-import { MakerTraitsLib } from "@1inch/swap-vm/src/libs/MakerTraits.sol";
 import { MockTaker } from "@1inch/swap-vm/test/mocks/MockTaker.sol";
-import { BPS } from "@1inch/swap-vm/src/instructions/Fee.sol";
 
 import { BacalhauRouter } from "../src/BacalhauRouter.sol";
-import { InventorySkewArgsBuilder } from "../src/InventorySkew.sol";
+import { SeedOrderLib, SEED_WETH, SEED_USDC, DEMO_SEED_SALT } from "./SeedOrder.sol";
 
 interface IERC20Meta {
     function approve(address, uint256) external returns (bool);
@@ -27,16 +25,6 @@ interface IERC20Meta {
 contract DemoDeployer {
     address internal constant BASE_WETH = 0x4200000000000000000000000000000000000006;
     address internal constant BASE_USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
-
-    uint8 internal constant OP_XYC_SWAP = 0x11;
-    uint8 internal constant OP_SALT = 0x14;
-    uint8 internal constant OP_FLAT_FEE_IN = 0x15;
-    uint8 internal constant OP_INVENTORY_SKEW = 0x22;
-
-    uint32 internal constant FEE_030 = uint32(3 * uint256(BPS) / 1000);
-    uint32 internal constant MAX_SKEW = uint32(uint256(BPS) / 20);
-    uint128 internal constant SEED_WETH = 100e18;
-    uint128 internal constant SEED_USDC = 200_000e6;
 
     Aqua public immutable aqua;
     BacalhauRouter public immutable router;
@@ -68,34 +56,7 @@ contract DemoDeployer {
     }
 
     function _selfBalancingOrder(address maker) internal pure returns (ISwapVM.Order memory) {
-        (uint128 t0, uint128 t1) = BASE_WETH < BASE_USDC ? (SEED_WETH, SEED_USDC) : (SEED_USDC, SEED_WETH);
-        bytes memory skewArgs = InventorySkewArgsBuilder.build(t0, t1, MAX_SKEW);
-        bytes memory program = bytes.concat(
-            abi.encodePacked(OP_INVENTORY_SKEW, uint8(skewArgs.length), skewArgs),
-            abi.encodePacked(OP_FLAT_FEE_IN, uint8(4), FEE_030),
-            abi.encodePacked(OP_XYC_SWAP, uint8(0)),
-            abi.encodePacked(OP_SALT, uint8(32), keccak256("bacalhau.demo.seed.v1"))
-        );
-        return MakerTraitsLib.build(MakerTraitsLib.Args({
-            maker: maker,
-            shouldUnwrapWeth: false,
-            useAquaInsteadOfSignature: true,
-            allowZeroAmountIn: false,
-            receiver: address(0),
-            hasPreTransferInHook: false,
-            hasPostTransferInHook: false,
-            hasPreTransferOutHook: false,
-            hasPostTransferOutHook: false,
-            preTransferInTarget: address(0),
-            preTransferInData: "",
-            postTransferInTarget: address(0),
-            postTransferInData: "",
-            preTransferOutTarget: address(0),
-            preTransferOutData: "",
-            postTransferOutTarget: address(0),
-            postTransferOutData: "",
-            program: program
-        }));
+        return SeedOrderLib.selfBalancingOrder(maker, BASE_WETH, BASE_USDC, DEMO_SEED_SALT);
     }
 }
 

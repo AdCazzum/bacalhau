@@ -6,7 +6,9 @@ import { Context } from "@1inch/swap-vm/src/libs/VM.sol";
 import { BPS } from "@1inch/swap-vm/src/instructions/Fee.sol";
 
 /// @dev Cap on maxSkewBps: 10% on the 1e9 BPS base. Constraining dangerous
-///      parameter ranges at the builder level is a PROGRAMS.md recommendation.
+///      parameter ranges at the builder level is a PROGRAMS.md recommendation;
+///      the instruction re-checks it on-chain because hand-rolled bytecode
+///      bypasses builders.
 uint256 constant MAX_SKEW_CAP = BPS / 10;
 
 library InventorySkewArgsBuilder {
@@ -51,6 +53,7 @@ library InventorySkewArgsBuilder {
 contract InventorySkew {
     error InventorySkewShouldBeCalledBeforeSwapAmountsComputation(uint256 amountIn, uint256 amountOut);
     error InventorySkewZeroTargets();
+    error InventorySkewExceedsCap();
 
     /// @param args target0 (uint128) | target1 (uint128) | maxSkewBps (uint32)
     ///        targets are keyed to the address-sorted token pair, so one
@@ -63,6 +66,9 @@ contract InventorySkew {
 
         (uint256 target0, uint256 target1, uint256 maxSkewBps) = InventorySkewArgsBuilder.parse(args);
         require(target0 > 0 && target1 > 0, InventorySkewZeroTargets());
+        // Re-check the builder cap: beyond it, drift * maxSkewBps / BPS can
+        // exceed BPS (underflow revert) or shrink a balance to near zero.
+        require(maxSkewBps <= MAX_SKEW_CAP, InventorySkewExceedsCap());
 
         // Orient canonical (address-sorted) targets to this trade's in/out.
         (uint256 targetIn, uint256 targetOut) = ctx.query.tokenIn < ctx.query.tokenOut

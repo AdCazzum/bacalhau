@@ -3,6 +3,8 @@ pragma solidity 0.8.30;
 
 import { console2 } from "forge-std/console2.sol";
 
+import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
+
 import { AquaSwapVMTest } from "@1inch/swap-vm/test/base/AquaSwapVMTest.sol";
 import { ISwapVM } from "@1inch/swap-vm/src/interfaces/ISwapVM.sol";
 import { XYCSwap } from "@1inch/swap-vm/src/instructions/XYCSwap.sol";
@@ -71,8 +73,9 @@ contract GoldenProgramsTest is AquaSwapVMTest {
         (uint256 amountIn, uint256 amountOut) = swap(sp, order);
         (uint256 makerAAfter, uint256 makerBAfter) = getAquaBalances(strategyHash);
 
-        // Expected: 0.3% fee shaved off the input, then x*y=k on net input.
-        uint256 netIn = amountIn - (amountIn * FEE_30_BPS / BPS);
+        // Expected: 0.3% fee shaved off the input (rounded up, matching
+        // Fee._flatFeeAmountInXD's ceilDiv), then x*y=k on the net input.
+        uint256 netIn = amountIn - Math.ceilDiv(amountIn * FEE_30_BPS, BPS);
         uint256 expectedOut = RESERVE_B * netIn / (RESERVE_A + netIn);
 
         assertEq(amountIn, sp.amount, "exact-in amount respected");
