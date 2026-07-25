@@ -21,7 +21,12 @@ Uniswap. Three sponsors: 1inch (core), The Graph (observability), Uniswap
 - **Contracts** (`contracts/`, Foundry, deps = 1inch swap-vm/aqua submodules):
   - `InventorySkew.sol` — custom SwapVM opcode 0x22 (self-balancing price
     tilt). `BacalhauRouter.sol` — modified-SwapVM redeploy with skew appended.
-  - Golden tests (template→bytecode parity) + 5 skew tests. **forge 8/8.**
+  - Golden tests (template→bytecode parity), 5 skew tests, 11 inventory-branch
+    tests. **forge 19/19.**
+  - `app/src/compiler/graph.test.ts` — 89 tests: golden-vector parity, a
+    test-local VM interpreter proving the emitted program runs exactly the nodes
+    the graph model says, a property test over 200 random branchy graphs, and 19
+    rejected unsafe shapes. **vitest 93/93.**
 - **Strategy graph** — SwapVM is a machine whose instructions rewrite the PC, so
   a strategy is a control-flow graph, not a pipeline:
   - `app/src/compiler/graph.ts` — two-pass assembler. Emits labels only at

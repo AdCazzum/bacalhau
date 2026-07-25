@@ -54,6 +54,17 @@ contract InventoryBranch {
     ///      the target split allows, i.e. `balance0 / balance1 > target0 / target1`.
     /// @dev LIMITATION: Jump targets are limited to uint16 (0-65,535), same as
     ///      Controls._jump. For larger programs use Extruction.
+    /// @dev LIMITATION: `nextPC` is not validated, exactly as Controls._jump
+    ///      does not validate it. A target pointing back at this instruction
+    ///      spins until the gas limit and reverts with no data; a target inside
+    ///      another instruction's arguments makes the VM read argument bytes as
+    ///      opcodes. Bacalhau's compiler can emit neither — the strategy graph
+    ///      is acyclic and labels only resolve to instruction boundaries, see
+    ///      app/src/compiler/graph.ts — but hand-rolled bytecode carries the
+    ///      same risk as stock jumps.
+    /// @dev LIMITATION: signature-based (non-Aqua) orders never load balances,
+    ///      so the predicate reads zeros and the branch becomes a silent no-op.
+    ///      This instruction is for Aqua-backed strategies, like InventorySkew.
     /// @param args target0 (uint128) | target1 (uint128) | nextPC (uint16)
     ///        targets are keyed to the address-sorted token pair, so one
     ///        argument blob serves both trade directions (XD). The predicate is
