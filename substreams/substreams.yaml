@@ -2,6 +2,11 @@ specVersion: v0.1.0
 package:
   name: bacalhau_aqua
   version: v0.1.0
+  url: https://github.com/AdCazzum/bacalhau
+  description: |
+    Decodes 1inch Aqua shared-liquidity events (Shipped, Docked, Pulled,
+    Pushed) into a typed stream. Powers the Bacalhau strategy studio's
+    subgraph: the first indexer for Aqua/SwapVM strategies.
 
 protobuf:
   files:
