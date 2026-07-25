@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# A new push supersedes an in-flight run on the same ref.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  app:
+    name: app (build + tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      # Also covers `tsc`: the derivation runs `pnpm build`, which typechecks
+      # before Vite emits. This is the exact artifact the deploy uploads.
+      - name: Build the static site
+        run: nix build .#site
+
+      - name: Unit tests
+        run: |
+          nix develop --command bash -c '
+            cd app
+            pnpm install --frozen-lockfile
+            pnpm test
+          '
+
+  contracts:
+    name: contracts (forge build + test)
+    runs-on: ubuntu-latest
+    steps:
+      # Aqua, SwapVM, forge-std and OpenZeppelin come in as submodules and
+      # foundry.toml remaps straight into ../lib.
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Build and test
+        run: |
+          nix develop --command bash -c '
+            cd contracts
+            forge build
+            forge test -vv
+          '
+
+  substreams:
+    name: substreams (wasm build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Build the wasm module
+        run: |
+          nix develop --command bash -c '
+            cd substreams
+            cargo build --target wasm32-unknown-unknown --release
+          '
