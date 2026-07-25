@@ -10,7 +10,8 @@ these.
 | Product capability | Powered by | Track |
 |---|---|---|
 | Strategy graph, custom opcodes, ship/dock, self-custody model | 1inch Aqua + SwapVM (official contracts) | 1inch — Build an Aqua App ($5k) |
-| Live dashboard, activity feed, fill history, public pages | The Graph: reusable Substreams module + subgraph over the same Aqua events | The Graph — Composable/Standardized ($3k) |
+| Copilot: ask about live strategies, get a compiled strategy back | The Graph as the agent's data source (subgraph + Subgraph MCP) | The Graph — **Best AI Use Case** ($3k, primary claim) |
+| Live dashboard, activity feed, fill history, public pages | The Graph: reusable Substreams module + subgraph over the same Aqua events | The Graph — Composable/Standardized ($3k, secondary) |
 | Market reference line, rebalance quoting & execution | Uniswap API (Developer Platform key) | Uniswap — Best API Integration ($7k) |
 
 ## Qualification requirements checklist
@@ -24,7 +25,19 @@ these.
 - [x] Proper git commit history: progressive commits throughout, no
       single-commit dump
 
-### The Graph
+### The Graph — Best AI Use Case (primary claim)
+- [x] AI component that reasons over the data rather than printing a query:
+      the copilot (`app/src/ui/Copilot.tsx`, `app/public/_worker.js/agent.js`)
+      answers questions about live strategies and emits SwapVM strategy graphs
+- [x] The Graph is load-bearing, not decorative: `query_strategies` runs
+      GraphQL against our deployed subgraph, and the reply names every tool it
+      used, so a judge can see which source answered
+- [x] The model never signs: its proposal is validated by the same `compile`/
+      `validate` the canvas uses, and a rejected graph is sent back once with
+      the compiler's own errors
+- [ ] Bonus (reusable SKILL or MCP server) — not attempted
+
+### The Graph — Composable/Standardized (secondary claim)
 - [x] Compose ≥2 Graph products. **Planned as a substreams-powered subgraph;
       Studio has since dropped support** ("Substreams-powered Subgraphs,
       originally intended for non-EVM chains, are no longer supported"), so the

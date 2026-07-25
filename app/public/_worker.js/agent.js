@@ -148,61 +148,150 @@ async function queryStrategies(env, args) {
 }
 
 /**
- * One MCP call over streamable HTTP. The server is stateless for tools/call,
- * so each request is a self-contained JSON-RPC POST rather than a session we
- * would have to keep alive across worker invocations.
+ * A session against the hosted Subgraph MCP server.
+ *
+ * The server speaks MCP's HTTP+SSE transport, not the newer streamable one:
+ * `GET /sse` returns a stream whose first frame names a `/messages?sessionId=`
+ * endpoint, POSTs there are answered with 202, and the actual JSON-RPC results
+ * arrive back on the open stream. So a call is only meaningful inside a live
+ * session, and the session has to outlive the POST — hence this object rather
+ * than a stateless helper.
  */
-async function mcpCall(env, name, args) {
+class McpSession {
+  constructor(base, key) {
+    this.base = base;
+    this.key = key;
+    this.endpoint = null;
+    this.reader = null;
+    this.buffer = "";
+    /** id -> resolve, for results that arrive out of order on one stream. */
+    this.pending = new Map();
+  }
+
+  async open() {
+    const res = await fetch(`${this.base}/sse`, {
+      headers: { Accept: "text/event-stream", Authorization: `Bearer ${this.key}` },
+    });
+    if (!res.ok || !res.body) throw new Error(`MCP stream HTTP ${res.status}`);
+    this.reader = res.body.getReader();
+    this.decoder = new TextDecoder();
+    this.pump();
+    this.endpoint = await this.awaitEndpoint();
+    await this.send({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "initialize",
+      params: {
+        protocolVersion: "2024-11-05",
+        capabilities: {},
+        clientInfo: { name: "qilinswap-copilot", version: "1.0" },
+      },
+    });
+    await this.result(1);
+    await this.send({ jsonrpc: "2.0", method: "notifications/initialized", params: {} });
+  }
+
+  /** Reads frames forever; each `data:` line is one JSON-RPC message. */
+  async pump() {
+    for (;;) {
+      const { value, done } = await this.reader.read();
+      if (done) return;
+      this.buffer += this.decoder.decode(value, { stream: true });
+      let split;
+      while ((split = this.buffer.indexOf("\n\n")) !== -1) {
+        const frame = this.buffer.slice(0, split);
+        this.buffer = this.buffer.slice(split + 2);
+        const data = frame
+          .split("\n")
+          .filter((line) => line.startsWith("data:"))
+          .map((line) => line.slice(5).trim())
+          .join("");
+        if (data === "") continue;
+        if (frame.includes("event: endpoint")) {
+          this.endpointResolve?.(data);
+          continue;
+        }
+        try {
+          const message = JSON.parse(data);
+          this.pending.get(message.id)?.(message);
+          this.pending.delete(message.id);
+        } catch {
+          // a keep-alive or a frame we do not model: nothing to do
+        }
+      }
+    }
+  }
+
+  awaitEndpoint() {
+    return new Promise((resolve, reject) => {
+      this.endpointResolve = resolve;
+      setTimeout(() => reject(new Error("MCP did not announce an endpoint")), 10000);
+    });
+  }
+
+  async send(message) {
+    const res = await fetch(`${this.base}${this.endpoint}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${this.key}` },
+      body: JSON.stringify(message),
+    });
+    // 202 Accepted: the answer comes back on the stream, not here.
+    if (res.status >= 400) throw new Error(`MCP POST HTTP ${res.status}`);
+  }
+
+  result(id) {
+    return new Promise((resolve, reject) => {
+      this.pending.set(id, resolve);
+      setTimeout(() => {
+        if (!this.pending.delete(id)) return;
+        reject(new Error(`MCP call ${id} timed out`));
+      }, 45000);
+    });
+  }
+
+  async call(name, args) {
+    const id = this.nextId();
+    await this.send({ jsonrpc: "2.0", id, method: "tools/call", params: { name, arguments: args } });
+    const message = await this.result(id);
+    if (message.error) return { error: message.error.message ?? "MCP error" };
+    // Tool results are content blocks; the text block is the payload.
+    const text = (message.result?.content ?? []).map((c) => c.text ?? "").join("\n");
+    return text === "" ? message.result : { result: text };
+  }
+
+  nextId() {
+    this.counter = (this.counter ?? 1) + 1;
+    return this.counter;
+  }
+
+  close() {
+    this.reader?.cancel().catch(() => {});
+  }
+}
+
+/** One session per request, opened only if the model actually reaches for it. */
+async function mcpCall(state, env, name, args) {
   const key = env.GRAPH_API_KEY;
   if (!key) return { error: "GRAPH_API_KEY is not configured" };
-  const res = await fetch(env.GRAPH_MCP_URL || "https://subgraphs.mcp.thegraph.com/mcp", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json, text/event-stream",
-      Authorization: `Bearer ${key}`,
-    },
-    body: JSON.stringify({
-      jsonrpc: "2.0",
-      id: Date.now(),
-      method: "tools/call",
-      params: { name, arguments: args },
-    }),
-  });
-  const text = await res.text();
-  if (!res.ok) return { error: `MCP HTTP ${res.status}: ${text.slice(0, 200)}` };
-  return parseMcpBody(text);
+  try {
+    if (!state.mcp) {
+      state.mcp = new McpSession(env.GRAPH_MCP_URL || "https://subgraphs.mcp.thegraph.com", key);
+      await state.mcp.open();
+    }
+    return await state.mcp.call(name, args);
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : String(e) };
+  }
 }
 
-/** Streamable HTTP may answer as plain JSON or as a one-event SSE stream. */
-export function parseMcpBody(text) {
-  const trimmed = text.trim();
-  if (!trimmed.startsWith("event:") && !trimmed.startsWith("data:")) {
-    try {
-      return JSON.parse(trimmed);
-    } catch {
-      return { error: `unparseable MCP response: ${trimmed.slice(0, 200)}` };
-    }
-  }
-  for (const line of trimmed.split("\n")) {
-    if (!line.startsWith("data:")) continue;
-    try {
-      return JSON.parse(line.slice(5).trim());
-    } catch {
-      // keep scanning: an SSE stream can carry comments and partial frames
-    }
-  }
-  return { error: "no data frame in MCP stream" };
-}
-
-async function runTool(env, name, args) {
+async function runTool(state, env, name, args) {
   switch (name) {
     case "query_strategies":
       return await queryStrategies(env, args);
     case "search_public_subgraphs":
-      return await mcpCall(env, "search_subgraphs_by_keyword", { keyword: args.keyword });
+      return await mcpCall(state, env, "search_subgraphs_by_keyword", { keyword: args.keyword });
     case "query_public_subgraph":
-      return await mcpCall(env, "execute_query_by_deployment_id", {
+      return await mcpCall(state, env, "execute_query_by_deployment_id", {
         deployment_id: args.deploymentId,
         query: args.query,
       });
@@ -239,6 +328,13 @@ export async function handleAgent(request, env) {
   const model = env.LLM_MODEL || DEFAULT_MODEL;
   const trace = [];
   let proposal = null;
+  // Holds the MCP session, opened lazily and closed on every exit path below.
+  const state = {};
+
+  const finish = (payload, status) => {
+    state.mcp?.close();
+    return json(payload, status);
+  };
 
   for (let round = 0; round < MAX_ROUNDS; round++) {
     const res = await fetch(`${base}/chat/completions`, {
@@ -252,17 +348,17 @@ export async function handleAgent(request, env) {
 
     if (!res.ok) {
       const detail = await res.text();
-      return json({ error: `model HTTP ${res.status}: ${detail.slice(0, 300)}` }, 502);
+      return finish({ error: `model HTTP ${res.status}: ${detail.slice(0, 300)}` }, 502);
     }
 
     const completion = await res.json();
     const choice = completion.choices?.[0]?.message;
-    if (!choice) return json({ error: "model returned no message" }, 502);
+    if (!choice) return finish({ error: "model returned no message" }, 502);
     messages.push(choice);
 
     const calls = choice.tool_calls ?? [];
     if (calls.length === 0) {
-      return json({ reply: choice.content ?? "", proposal, trace });
+      return finish({ reply: choice.content ?? "", proposal, trace });
     }
 
     for (const call of calls) {
@@ -282,7 +378,7 @@ export async function handleAgent(request, env) {
         name === "propose_strategy"
           ? ((proposal = { label: args.label, rationale: args.rationale, graph: args.graph }),
             { ok: true, note: "shown to the user for review" })
-          : await runTool(env, name, args);
+          : await runTool(state, env, name, args);
 
       messages.push({
         role: "tool",
@@ -292,7 +388,7 @@ export async function handleAgent(request, env) {
     }
   }
 
-  return json({
+  return finish({
     reply: "I could not finish that within the tool budget — try a narrower question.",
     proposal,
     trace,
