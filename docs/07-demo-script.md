@@ -1,26 +1,35 @@
 # QilinSwap — Demo Script (video ≤ 4 min, live pitch 3 min)
 
-One script serves both the recorded video and the live judging table. Every
-beat names what is on screen and what is said. No beat depends on luck: all
-on-chain actions run against our prepared environment, rehearsed.
+The video and the live pitch are now DIFFERENT cuts of the same material:
+
+- **Video**: recorded entirely on the public site (bacalhau.pages.dev). Every
+  transaction shown is a real Base Sepolia transaction a judge can replay
+  themselves one minute after watching. No rebalance beat — it needs the local
+  fork, and one environment per video keeps the story honest.
+- **Live pitch**: same beats, but on `nix run .#dev`, where the rebalance runs
+  against real Base liquidity. That is the one thing the table sees that the
+  video does not.
 
 ## Cast & setup (before recording)
 
-- `nix run .#dev` running: Base fork, contracts deployed, seed strategy live so
-  the dashboard is never empty. A terminal is NEVER shown.
-- Demo wallet is the anvil account the app already signs with — no extension,
-  no approval theatre (mention approvals, never perform them).
-- Market overlay live. If the Uniswap proxy is flaky, the curve still renders;
+- Record on **https://bacalhau.pages.dev** — NOT the local stack. The header
+  must read "Base Sepolia · shared demo wallet"; that label is part of the
+  pitch.
+- Open the Dashboard first. The wallet is shared: if strangers' strategies are
+  live, dock them before recording.
+- Dry-run both copilot questions once off-camera; ~10s latency each is normal.
+  If the MCP answer takes >15s, record Beat 3 separately and cut.
+- Market overlay live. If the Uniswap proxy is flaky the curve still renders;
   don't wait for the dashed line on camera.
-- Browser at 1080p+, the app opens on the Canvas.
+- Browser at 1080p+, the app opens on the Canvas. A terminal is NEVER shown.
 
-## Script
+## Video script
 
 ### Beat 0 — Cold open (0:00–0:15)
 Screen: Dashboard, seed strategy with fills in the feed.
-Line: "This is a market-making strategy earning fees right now. Its owner wrote
-zero code, deployed zero contracts, and the funds are still in their own wallet.
-Here's how it's built."
+Line: "This is a market-making strategy earning fees right now, on a public
+testnet. Its owner wrote zero code, deployed zero contracts, and the funds are
+still in their own wallet. Here's how it's built."
 
 ### Beat 1 — It's a graph, not a form (0:15–1:00)
 Screen: Canvas → template **Two-sided desk**. Then click the two preview
@@ -54,13 +63,15 @@ those tags name the source, live, right now. Second one writes the strategy.
 It doesn't sign anything: it hands back a program, our compiler checks it, and
 only then can I ship it. A graph it gets wrong is rejected right here."
 
-### Beat 4 — Ship it (2:20–2:35)
+### Beat 4 — Ship it, for real (2:20–2:35)
 Screen: Ship strategy → lands on the Dashboard, new card beside the seed one.
-Line: "One signature, no deposit. My tokens haven't moved — Aqua just recorded a
+Line: "One signature, no deposit — and this is a real Base Sepolia transaction,
+from the browser you're watching. My tokens haven't moved: Aqua just recorded a
 budget it can draw on when a trade actually executes."
 
 ### Beat 5 — The state machine flips, on-chain (2:35–3:15)
-**The money shot.** Screen: test-swap panel on the new card.
+**The money shot.** Screen: test-swap panel on the card just shipped in Beat 4
+(fresh inventory, so the 70% flip is reproducible).
 1. Quote 1 WETH → say the number out loud.
 2. Swap 6 WETH → balances move, the inventory bar crosses 70%.
 3. Quote 1 WETH again → visibly worse.
@@ -69,20 +80,30 @@ six ETH — watch the inventory bar cross seventy percent. Same quote again, and
 the price is worse: the strategy took the other branch. That decision happened
 inside the VM, on-chain, in our own instruction."
 
-### Beat 6 — Correct the drift (3:15–3:37)
+### Beat 6 — The Graph closes the loop (3:15–3:40)
+Screen: the **Indexed** tab. The swap from Beat 5 is already at the top of
+Movements, with its tx hash, next to the endpoint and the exact query.
+Line: "And here's that same swap, thirty seconds later, coming back through The
+Graph — our subgraph, the first indexer Aqua ever had. That's the endpoint and
+the exact query: paste them into the Studio playground and you get these same
+rows. Don't trust the dashboard — check it."
+
+### Beat 7 — Close (3:40–3:55)
+Screen: quick pan over the README.
+Line: "Strategies compile to 1inch SwapVM programs with two instructions of our
+own, market truth comes from the Uniswap API, observability from The Graph —
+and everything you just saw is live at bacalhau.pages.dev. QilinSwap: liquidity
+strategies for people who don't write Solidity."
+
+## Live pitch only — the rebalance beat
+
+Runs on `nix run .#dev` (Base fork), replacing Beat 6 if time is tight:
 Screen: Wallet inventory banner amber → Preview (Uniswap route appears) →
 Rebalance → gauge moves.
 Line: "Trading all day leaves me lopsided. The Uniswap API quotes and routes the
 corrective swap, and it executes against real Base liquidity — that's a live
-route, not a mock."
-
-### Beat 7 — Close (3:37–3:58)
-Screen: the Indexed page (endpoint + query + rows), then a quick pan over the
-README.
-Line: "Aqua had no indexer, so we built one: a reusable Substreams module and a
-subgraph over the same events, both live — and an agent that reads them. Here's
-the endpoint and the exact query, so you can run it yourself. QilinSwap:
-liquidity strategies for people who don't write Solidity."
+route, not a mock. On the public site this step stays local: our Sepolia mock
+tokens have no Uniswap pool to route through, and the UI says exactly that."
 
 ## Judge Q&A prep (live table only)
 
@@ -99,12 +120,13 @@ Likely questions, one-line answers ready:
   deploy and own the risk of**, ours is data run by an already-audited VM; and
   the funds stay in the maker's wallet, backing several strategies at once.
   Never claim we can do something Uniswap cannot — we cannot, and they know it.
-- "Why is the dashboard showing different numbers from the canvas?" → two
-  chains on purpose: the live demo runs on a local Base fork, while the Graph
-  panel indexes our real Base Sepolia deployment. An indexer cannot see anvil.
-- "Is the indexed data real?" → yes, and we generated the on-chain traffic
-  ourselves because Aqua has no organic testnet volume; offer the Studio
-  endpoint so they can run the query themselves.
+- "Is the public site really writing on chain?" → yes: the bundle ships a
+  throwaway Sepolia key on purpose (testnet gas and mock tokens, nothing else),
+  so every ship/swap/dock a visitor clicks is a real transaction. Offer to
+  open Basescan on the tx hash in the activity feed.
+- "Is the indexed data real?" → yes, and partly generated by visitors like you:
+  the subgraph indexes our Base Sepolia deployment, and the Indexed page shows
+  the endpoint plus the exact query so anyone can replay it in Studio.
 - "Did you really compose two Graph products?" → Substreams module plus a
   subgraph over the same events. Be upfront: we planned a substreams-powered
   subgraph, and Studio now rejects those outright — quote the error.
@@ -135,4 +157,6 @@ Likely questions, one-line answers ready:
 
 - 1080p minimum, cursor visible, no dead air > 2 s, captions for key terms.
 - Record beats separately; cut together. Keep a full uncut fallback take.
-- Absolute cap 3:50 — Graph's limit is 4:00 and we do not gamble the buffer.
+- Sepolia blocks land in ~2 s: leave the receipt wait in the cut — a real
+  confirmation is worth two seconds of silence. Trim anything longer.
+- Absolute cap 3:55 — Graph's limit is 4:00 and we do not gamble the buffer.
