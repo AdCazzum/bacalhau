@@ -1,0 +1,35 @@
+name: Deploy
+
+# The whole deploy is `nix run .#deploy`, which is the same command used
+# locally — CI adds credentials, nothing else.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  cloudflare-pages:
+    name: Cloudflare Pages
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Build and deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # Pushed to the Pages project as a worker secret, so it stays out of
+          # the bundle. Omit it and the previously configured value stands.
+          UNISWAP_API_KEY: ${{ secrets.UNISWAP_API_KEY }}
+          CF_PAGES_PROJECT: bacalhau
+        run: nix run .#deploy
