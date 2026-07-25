@@ -84,6 +84,14 @@
             # real Sepolia deployment instead.
             env.VITE_PUBLIC_DEMO = "1";
 
+            # The Studio query endpoint is public data, not a credential, and
+            # the browser queries it directly (docs/08). Baking it in keeps the
+            # derivation self-contained: without it the deployed site would
+            # silently disable every Graph panel, which is exactly what a judge
+            # opening the public URL would look for.
+            env.VITE_GRAPH_SUBGRAPH_URL =
+              "https://api.studio.thegraph.com/query/1756929/bacalhau-aqua/v0.0.2";
+
             buildPhase = ''
               runHook preBuild
               pnpm build
@@ -111,12 +119,17 @@
               project="''${CF_PAGES_PROJECT:-bacalhau}"
               branch="''${CF_PAGES_BRANCH:-main}"
 
-              # Keep the worker's key in step with the deploy when one is
-              # provided; otherwise leave whatever is already configured.
-              if [ -n "''${UNISWAP_API_KEY:-}" ]; then
-                echo "$UNISWAP_API_KEY" \
-                  | wrangler pages secret put UNISWAP_API_KEY --project-name "$project"
-              fi
+              # Keep the worker's secrets in step with the deploy when they are
+              # provided; otherwise leave whatever is already configured. The
+              # copilot needs all of these server-side, so a deploy that
+              # silently dropped one would 503 on /agent.
+              for name in UNISWAP_API_KEY LLM_API_KEY LLM_BASE_URL LLM_MODEL \
+                          GRAPH_API_KEY GRAPH_SUBGRAPH_URL; do
+                value="''${!name:-}"
+                [ -n "$value" ] || continue
+                printf '%s' "$value" \
+                  | wrangler pages secret put "$name" --project-name "$project"
+              done
 
               wrangler pages deploy ${self'.packages.site} \
                 --project-name "$project" \
