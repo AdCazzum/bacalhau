@@ -62,6 +62,23 @@ Uniswap. Three sponsors: 1inch (core), The Graph (observability), Uniswap
     https://api.studio.thegraph.com/query/1756929/bacalhau-aqua/v0.0.2
   - Dashboard panel "Indexed by The Graph" shows indexer head block, strategy
     status and recent movements.
+  - **Copilot** (`app/src/ui/Copilot.tsx` + `app/public/_worker.js/agent.js`) —
+    the primary Graph claim is now **Best AI Use Case**, with
+    Composable/Standardized as the secondary. The agent queries our subgraph
+    over GraphQL and the rest of the network through the hosted **Subgraph
+    MCP**, which speaks MCP over HTTP+SSE (`GET /sse` names a
+    `/messages?sessionId=` endpoint, POSTs answer 202, results arrive on the
+    stream) — implemented by hand because the worker cannot use the SDK.
+    Verified live against Uniswap V3 Base. Its proposals are rebuilt by
+    `app/src/lib/proposal.ts` and judged by the canvas's own `validate()`;
+    a rejected graph goes back once with the compiler's errors.
+    Model: OpenRouter `google/gemini-3.6-flash`, keys server-side only
+    (`app/.env.example`; on Pages use `wrangler pages secret put`).
+  - **The MCP cannot read our own subgraph** — it resolves deployments
+    published to The Graph Network and ours is Studio-only. Verified: the
+    three "aqua" subgraphs on the network are a different protocol (perps,
+    collateral/epoch entities). Publishing would need Arbitrum ETH + GRT
+    signal; the deployer wallet has neither.
 - **Base Sepolia** (chain 84532, deploy block 44584712) — real public
   deployment, addresses in `contracts/deployments/sepolia.json`:
   Aqua `0xE5Cf2ec690BeE8b59cB8340f469ecfB2f0De98bD`,

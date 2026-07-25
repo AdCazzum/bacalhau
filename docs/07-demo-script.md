@@ -41,12 +41,23 @@ more than 70% ETH?' — below, accumulate at five basis points; above, flip to
 distributing at fifty. That's our bytecode, and 0x23 is our opcode, running on
 1inch's VM."
 
-### Beat 3 — Ship it (1:40–2:00)
+### Beat 3 — Ask for it in English (1:40–2:10)
+Screen: the Copilot panel on the Canvas. Click the example *"Build me a desk
+that leans out of ETH above 70%"*. When the proposal lands, point at the tool
+pills under the answer, then click **Load on canvas** — the graph appears, the
+bytecode counter fills, Ship lights up.
+Line: "You don't have to know the blocks. The copilot reads our subgraph and
+The Graph Network through the official Subgraph MCP — those tags say which
+source answered. It doesn't sign anything: it hands back a program, our
+compiler checks it, and only then can I ship it. A graph it gets wrong gets
+rejected right here."
+
+### Beat 4 — Ship it (2:10–2:25)
 Screen: Ship strategy → lands on the Dashboard, new card beside the seed one.
 Line: "One signature, no deposit. My tokens haven't moved — Aqua just recorded a
 budget it can draw on when a trade actually executes."
 
-### Beat 4 — The state machine flips, on-chain (2:00–2:50)
+### Beat 5 — The state machine flips, on-chain (2:25–3:05)
 **The money shot.** Screen: test-swap panel on the new card.
 1. Quote 1 WETH → say the number out loud.
 2. Swap 6 WETH → balances move, the inventory bar crosses 70%.
@@ -56,20 +67,20 @@ six ETH — watch the inventory bar cross seventy percent. Same quote again, and
 the price is worse: the strategy took the other branch. That decision happened
 inside the VM, on-chain, in our own instruction."
 
-### Beat 5 — Correct the drift (2:50–3:20)
+### Beat 6 — Correct the drift (3:05–3:30)
 Screen: Wallet inventory banner amber → Preview (Uniswap route appears) →
 Rebalance → gauge moves.
 Line: "Trading all day leaves me lopsided. The Uniswap API quotes and routes the
 corrective swap, and it executes against real Base liquidity — that's a live
 route, not a mock."
 
-### Beat 6 — Close (3:20–3:45)
-Screen: the "Indexed by The Graph" panel, then a quick pan over the README.
+### Beat 7 — Close (3:30–3:55)
+Screen: the Indexed page (endpoint + query + rows), then a quick pan over the
+README.
 Line: "Aqua had no indexer, so we built one: a reusable Substreams module and a
-subgraph over the same events, both live. Strategies compile to 1inch SwapVM
-programs with two instructions of our own, market truth comes from the Uniswap
-API, and observability from The Graph. QilinSwap: liquidity strategies for people
-who don't write Solidity."
+subgraph over the same events, both live — and an agent that reads them. Here's
+the endpoint and the exact query, so you can run it yourself. QilinSwap:
+liquidity strategies for people who don't write Solidity."
 
 ## Judge Q&A prep (live table only)
 
@@ -95,6 +106,18 @@ Likely questions, one-line answers ready:
 - "Did you really compose two Graph products?" → Substreams module plus a
   subgraph over the same events. Be upfront: we planned a substreams-powered
   subgraph, and Studio now rejects those outright — quote the error.
+- **"Does the copilot use the Subgraph MCP on your own data?"** — no, and say
+  so first: the MCP resolves deployments published to the Network, ours is on
+  Studio, so our strategies come over GraphQL and the MCP brings market context
+  from public subgraphs. Both are named in the UI under every answer. Offer the
+  reason we did not publish: it needs Arbitrum gas plus GRT signal to get an
+  indexer, and unindexed publishing would have been theatre.
+- "What stops the model hallucinating a strategy?" → nothing stops it
+  proposing one; the compiler stops it shipping. Every proposal is rebuilt
+  field by field (`app/src/lib/proposal.ts`, 112 tests) and then run through
+  the same `validate()` the canvas uses. A rejected graph is sent back once
+  with those errors, and if it still fails we show the rejection instead of a
+  Load button. The model never signs — the user presses Ship.
 - "Aren't loops missing?" → deliberate. The Aqua opcode table has no arithmetic
   or register comparison, so a back edge could never compute an exit condition;
   the validator rejects cycles. Backward jumps in the emitted bytecode are joins.

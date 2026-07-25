@@ -120,13 +120,16 @@ pins that with a program using both custom opcodes at once.
 Integration notes, including why execution calls SwapRouter02 directly instead
 of submitting the API's Permit2 calldata: [`FEEDBACK.md`](FEEDBACK.md).
 
-### The Graph — Substreams + subgraph
+### The Graph — copilot, Substreams + subgraph
 
 | What | Where |
 | ---- | ----- |
 | Reusable Substreams module decoding Aqua's `Shipped`/`Docked`/`Pulled`/`Pushed` | [`substreams/`](substreams/) |
 | Subgraph over the same events, deployed and indexing Base Sepolia | [`subgraph/`](subgraph/) |
 | Dashboard panel reading the live endpoint | [`app/src/lib/subgraph.ts`](app/src/lib/subgraph.ts) |
+| Copilot: chat panel, proposal validation | [`app/src/ui/Copilot.tsx`](app/src/ui/Copilot.tsx) |
+| Copilot: tool loop, GraphQL tool, Subgraph MCP client | [`app/public/_worker.js/agent.js`](app/public/_worker.js/agent.js) |
+| Parser that rebuilds an untrusted proposal into a typed graph | [`app/src/lib/proposal.ts`](app/src/lib/proposal.ts) |
 
 **What composability bought us:** Aqua had no indexer at all, so both products
 start from the same decode. The Substreams module is the reusable half — it emits
@@ -137,6 +140,24 @@ means pointing it at the existing `.spkg`, not re-deriving Aqua's event layout.
 Live data is real, not mocked: we generated the on-chain traffic ourselves
 ([`contracts/script/SepoliaSwaps.s.sol`](contracts/script/SepoliaSwaps.s.sol))
 because Aqua has no organic testnet volume yet.
+
+**The copilot, and what it is allowed to do.** Ask it which strategy has taken
+the most flow, or for a desk that leans out of ETH above 70%. It reads our
+subgraph over GraphQL and the rest of The Graph Network through the official
+**Subgraph MCP** — the hosted server speaks MCP over HTTP+SSE, so the worker
+opens a session, POSTs JSON-RPC and matches answers by id. Every reply lists
+the tools it used, because "grounded in live data" is a claim a judge should be
+able to check rather than take.
+
+Its only write is a strategy graph, and it is not trusted: the proposal is
+rebuilt field by field, then judged by the same `validate()` the canvas uses. A
+graph the compiler rejects is sent back once with those errors and, if the fix
+fails, shown as rejected rather than offered. Nothing is signed by the model —
+the user still presses Ship.
+
+The MCP cannot see our own subgraph: it resolves deployments published to The
+Graph Network, and ours lives in Subgraph Studio. That is why the two are
+separate tools rather than one, and the copilot says which answered.
 
 ## Specs
 
