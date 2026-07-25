@@ -2,7 +2,7 @@ import { useState } from "react";
 import { parseUnits, type Address } from "viem";
 
 import { aquaAbi, erc20Abi, routerAbi, takerAbi } from "../lib/abi";
-import { canWrite, publicClient, walletClient } from "../lib/chain";
+import { canWrite, isPublicDemo, publicClient, walletClient } from "../lib/chain";
 import { strategyName } from "../lib/name";
 import { takerData } from "../lib/order";
 import { fmtAmount, indexedDecimals, USDC_DECIMALS, WETH_DECIMALS, wethValueInUsdc } from "../lib/units";
@@ -224,7 +224,14 @@ function WalletInventory({
         <span>{fmtAmount(wallet.weth, WETH_DECIMALS)} WETH</span>
         <span>{fmtAmount(wallet.usdc, USDC_DECIMALS)} USDC</span>
       </div>
-      {drifted && (
+      {drifted && isPublicDemo && (
+        <p className="hint">
+          Rebalancing routes through real Uniswap liquidity on a Base fork —
+          the Sepolia mock tokens have no pool, so this step runs on the local
+          demo (<code>nix run .#dev</code>).
+        </p>
+      )}
+      {drifted && !isPublicDemo && (
         <>
           <p className="hint">
             Sell {fmtAmount(sellAmount, sellDecimals)} {wethOverweight ? "WETH" : "USDC"} via Uniswap to

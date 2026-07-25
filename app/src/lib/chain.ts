@@ -10,10 +10,15 @@ import { privateKeyToAccount } from "viem/accounts";
 import { base, baseSepolia } from "viem/chains";
 
 /**
- * PoC posture (docs/08): the app drives a local demo wallet directly —
- * anvil account #0, publicly known key. No wallet extension on stage.
+ * PoC posture (docs/08): the app drives a demo wallet directly — no wallet
+ * extension on stage. Locally that is anvil account #0 (publicly known key).
+ * The public build bakes in VITE_DEMO_KEY: a throwaway Base Sepolia key that
+ * only ever holds testnet gas and mock tokens, shipped knowingly so visitors
+ * can execute the whole flow. Anyone may drain it; there is nothing to drain.
  */
-const DEMO_KEY: Hex = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+const DEMO_KEY: Hex =
+  (import.meta.env.VITE_DEMO_KEY as Hex | undefined) ??
+  "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 
 /**
  * The public build targets Base Sepolia, where the demo deployment is real
@@ -31,11 +36,11 @@ const forkChain = defineChain({
 const chain = isPublicDemo ? baseSepolia : forkChain;
 
 /**
- * Writes need a funded key. Locally that is anvil account #0; on the public
- * build it would mean shipping a funded private key in the bundle, so the
- * write paths are disabled instead.
+ * Writes need a funded key. Locally that is anvil account #0; the public
+ * build writes on Base Sepolia only when a demo key was baked in at build
+ * time — without one it stays read-only.
  */
-export const canWrite = !isPublicDemo;
+export const canWrite = !isPublicDemo || Boolean(import.meta.env.VITE_DEMO_KEY);
 
 export const demoAccount = privateKeyToAccount(DEMO_KEY);
 

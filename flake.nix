@@ -80,9 +80,18 @@
 
             # The public build targets Base Sepolia: the anvil fork the local
             # demo uses lives on 127.0.0.1 and is unreachable from a visitor's
-            # browser, so the write paths are disabled and the app reads the
-            # real Sepolia deployment instead.
+            # browser, so the app reads the real Sepolia deployment instead.
             env.VITE_PUBLIC_DEMO = "1";
+
+            # DELIBERATELY PUBLIC private key. This is the throwaway Base
+            # Sepolia demo wallet (0x4fB5C9…): it holds testnet gas and mock
+            # tokens, nothing else, and shipping it in the bundle is what lets
+            # a visitor run the whole flow — ship, swap, dock — as real Sepolia
+            # transactions. Anyone can drain it; there is nothing to drain.
+            # NEVER fund this account with real assets, and never reuse the
+            # pattern for a key that touches a mainnet.
+            env.VITE_DEMO_KEY =
+              "0x937c36bb5ef92072856cc47f7a828d031f0903500f80309257ca0ecc8d54faff";
 
             # The Studio query endpoint is public data, not a credential, and
             # the browser queries it directly (docs/08). Baking it in keeps the

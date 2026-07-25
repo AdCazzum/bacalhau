@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { canWrite } from "./lib/chain";
+import { canWrite, isPublicDemo } from "./lib/chain";
 import { Canvas } from "./ui/Canvas";
 import { Dashboard } from "./ui/Dashboard";
 import { Hero } from "./ui/Hero";
@@ -41,7 +41,9 @@ export function App() {
         <span className="net">
           {demo.deployment
             ? canWrite
-              ? "anvil · demo wallet"
+              ? isPublicDemo
+                ? "Base Sepolia · shared demo wallet"
+                : "anvil · demo wallet"
               : "Base Sepolia · read-only"
             : "connecting…"}
         </span>
@@ -52,6 +54,13 @@ export function App() {
           Live preview on Base Sepolia. Composing strategies and quoting are
           fully interactive; shipping, rebalancing and swapping need a funded
           key, so they run only on the local demo — <code>nix run .#dev</code>.
+        </div>
+      )}
+
+      {canWrite && isPublicDemo && (
+        <div className="banner">
+          Every action here is a real Base Sepolia transaction from a shared
+          throwaway wallet — ship, swap and dock away, it is all testnet.
         </div>
       )}
 
