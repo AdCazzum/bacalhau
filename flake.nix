@@ -75,7 +75,7 @@
             pnpmDeps = pkgs.fetchPnpmDeps {
               inherit (finalAttrs) pname version src;
               fetcherVersion = 4;
-              hash = "sha256-xWx5HudRWUKGHX2wBim4XEDdFys3oQlKq2isPgKxfLY=";
+              hash = "sha256-Fv+4N4iY9O3lMyYt1dbEaRuenANZW8/YrttpD2SauxQ=";
             };
 
             # The public build targets Base Sepolia: the anvil fork the local
