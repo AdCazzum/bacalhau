@@ -11,3 +11,5 @@ target/
 !.env.example
 deployments/
 app/public/local.json
+contracts/broadcast/
+contracts/cache/

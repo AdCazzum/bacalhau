@@ -19,12 +19,12 @@ network: base-sepolia
 # The Aqua contract address on Base Sepolia is injected via the map_events
 # param (set once the SepoliaEnv deploy runs). The module filters logs to it.
 params:
-  map_events: "aqua=0x0000000000000000000000000000000000000000"
+  map_events: "aqua=0xE5Cf2ec690BeE8b59cB8340f469ecfB2f0De98bD"
 
 modules:
   - name: map_events
     kind: map
-    initialBlock: 0
+    initialBlock: 44584712
     inputs:
       - params: string
       - source: sf.ethereum.type.v2.Block
