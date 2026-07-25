@@ -74,7 +74,7 @@ contract InventoryBranch {
         // Targets are uint128 by construction, so a product only overflows for
         // balances above 2**128 - checked arithmetic reverts there rather than
         // wrapping, the same accepted behavior as InventorySkew's cross-multiply.
-        if (balance0 * target1 > balance1 * target0) {
+        if (balance0 * target1 >= balance1 * target0) {
             ctx.setNextPC(nextPC);
         }
     }
