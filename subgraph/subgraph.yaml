@@ -1,20 +1,38 @@
-specVersion: 1.5.0
+specVersion: 1.0.0
 description: >
-  First indexer for 1inch Aqua strategies. Consumes the bacalhau_aqua
-  Substreams package (Shipped/Docked/Pulled/Pushed) and materializes
-  strategies and fills for the Bacalhau studio dashboard.
+  First indexer for 1inch Aqua strategies: materializes shipped/docked
+  strategies and their fills from Aqua's events on Base Sepolia, powering the
+  Bacalhau studio dashboard. The same events are also decoded by a standalone
+  Substreams package (../substreams) for streaming consumers.
 repository: https://github.com/AdCazzum/bacalhau
 schema:
   file: ./schema.graphql
 dataSources:
-  - kind: substreams
-    name: aqua
+  - kind: ethereum/contract
+    name: Aqua
     network: base-sepolia
     source:
-      package:
-        moduleName: graph_out
-        file: ../substreams/bacalhau-aqua-v0.1.0.spkg
+      address: "0xE5Cf2ec690BeE8b59cB8340f469ecfB2f0De98bD"
+      abi: Aqua
       startBlock: 44584712
     mapping:
+      kind: ethereum/events
       apiVersion: 0.0.9
-      kind: substreams/graph-entities
+      language: wasm/assemblyscript
+      file: ./src/mapping.ts
+      entities:
+        - Strategy
+        - Fill
+        - Protocol
+      abis:
+        - name: Aqua
+          file: ../substreams/abi/aqua.json
+      eventHandlers:
+        - event: Shipped(address,address,bytes32,bytes)
+          handler: handleShipped
+        - event: Docked(address,address,bytes32)
+          handler: handleDocked
+        - event: Pulled(address,address,bytes32,address,uint256)
+          handler: handlePulled
+        - event: Pushed(address,address,bytes32,address,uint256)
+          handler: handlePushed

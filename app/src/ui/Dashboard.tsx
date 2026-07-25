@@ -7,6 +7,7 @@ import { takerData } from "../lib/order";
 import { fmtAmount, USDC_DECIMALS, WETH_DECIMALS, wethValueInUsdc } from "../lib/units";
 import type { DemoState, Strategy } from "../state/useDemo";
 import { useMarketPrice } from "../state/useMarketPrice";
+import { useIndexed } from "../state/useIndexed";
 import {
   executeRebalance,
   quoteRebalance,
@@ -51,9 +52,76 @@ export function Dashboard({ demo }: DashboardProps) {
             <small>block {f.blockNumber.toString()} · {f.txHash.slice(0, 10)}…</small>
           </div>
         ))}
+        <IndexedPanel />
       </aside>
     </div>
   );
+}
+
+/**
+ * The Graph pillar: the deployed subgraph's view of Aqua on a public chain
+ * (Base Sepolia). Only rendered when a subgraph is configured — the anvil-fork
+ * walkthrough has no indexer, so the local demo is unaffected.
+ *
+ * Fills carry their own token, so amounts are formatted per token rather than
+ * with one blanket decimals guess.
+ */
+function IndexedPanel() {
+  const { enabled, data, error } = useIndexed();
+  if (!enabled) return null;
+
+  return (
+    <div className="indexed">
+      <h3>
+        Indexed by The Graph
+        {data?.indexedBlock != null && <small> · block {data.indexedBlock}</small>}
+      </h3>
+      {error && <p className="warn">{error}</p>}
+      {!error && !data && <p className="hint">querying subgraph…</p>}
+      {data?.strategies.length === 0 && <p className="hint">no strategies indexed yet</p>}
+      {data?.strategies.map((s) => (
+        <div key={s.id} className="fill">
+          <span className="dir">
+            {s.id.slice(0, 10)}… <span className={`pill ${s.status.toLowerCase()}`}>{s.status}</span>
+          </span>
+          <span>
+            {s.fillCount} {s.fillCount === 1 ? "swap" : "swaps"} indexed
+          </span>
+        </div>
+      ))}
+      {data && data.fills.length > 0 && (
+        <>
+          <h3 className="sub">Recent indexed movements</h3>
+          {data.fills.slice(0, 6).map((f) => {
+            const decimals = knownDecimals(f.token);
+            return (
+              <div key={f.id} className="fill">
+                <span className="dir">{f.direction === "PULL" ? "maker → taker" : "taker → maker"}</span>
+                <span>
+                  {decimals === null
+                    ? f.amount
+                    : `${fmtAmount(BigInt(f.amount), decimals)} ${decimals === WETH_DECIMALS ? "WETH" : "USDC"}`}
+                </span>
+                <small>{f.txHash.slice(0, 10)}…</small>
+              </div>
+            );
+          })}
+        </>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Token decimals for the Base Sepolia demo pair (deployments/sepolia.json).
+ * Returns null for anything else so amounts degrade to raw units instead of
+ * being silently mis-scaled.
+ */
+function knownDecimals(token: string): number | null {
+  const t = token.toLowerCase();
+  if (t === "0x0f599727f37d4fc8ab5dbd3afe86c3ebf4a892f7") return WETH_DECIMALS;
+  if (t === "0xb6ec46c767b71a5aa4b51bad4a40827560d63e55") return USDC_DECIMALS;
+  return null;
 }
 
 function StrategyCard({ strategy, demo, marketPrice }: { strategy: Strategy; demo: DemoState; marketPrice: bigint | null }) {

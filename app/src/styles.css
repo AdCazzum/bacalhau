@@ -145,3 +145,15 @@ h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1.2px; color: v
 .wallet-inv header { font-size: 13px; color: var(--text); font-weight: 600; margin-bottom: 10px; }
 .wallet-inv.rebalance header { color: var(--warn); }
 .wallet-inv .balances { margin-top: 8px; }
+
+.indexed {
+  margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--line);
+}
+.indexed h3 {
+  font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--muted); margin: 0 0 10px;
+}
+.indexed h3 small { text-transform: none; letter-spacing: 0; color: var(--aqua); }
+.indexed .hint { font-size: 12px; color: var(--muted); }
+.indexed .pill.docked { background: transparent; border: 1px solid var(--muted); color: var(--muted); }
+.indexed h3.sub { margin-top: 14px; }
