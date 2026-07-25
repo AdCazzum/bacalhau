@@ -229,7 +229,7 @@ export function Canvas({ demo, onShipped }: CanvasProps) {
         id: `e${i}`,
         source: e.from,
         target: e.to,
-        ...(e.port ? { sourceHandle: e.port, label: e.port } : {}),
+        ...(e.port ? { sourceHandle: e.port, label: e.port, className: `port-${e.port}` } : {}),
       })),
     );
   };
@@ -245,7 +245,15 @@ export function Canvas({ demo, onShipped }: CanvasProps) {
   const onConnect = useCallback(
     (c: Connection) =>
       setFlowEdges((es) =>
-        addEdge({ ...c, ...(c.sourceHandle ? { label: c.sourceHandle } : {}) }, es),
+        addEdge(
+          {
+            ...c,
+            ...(c.sourceHandle
+              ? { label: c.sourceHandle, className: `port-${c.sourceHandle}` }
+              : {}),
+          },
+          es,
+        ),
       ),
     [],
   );
