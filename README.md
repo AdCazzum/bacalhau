@@ -8,16 +8,26 @@ Built at ETHGlobal Lisbon 2026.
 ## What it is
 
 A strategy is a **control-flow graph**, not a form. SwapVM's run loop re-reads
-the program counter after every instruction, so any instruction can branch —
-which is what makes the interesting strategies expressible at all:
+the program counter after every instruction, so any instruction can branch:
 
 - **quote asymmetrically per side** — cheap for takers who sell you ETH,
-  expensive for takers who buy it (a constant-product pool has one symmetric fee)
+  expensive for takers who buy it
 - **switch behaviour on inventory** — accumulate until you hold 70% ETH, then
   flip to distributing it
 
 You draw that graph, it compiles to SwapVM bytecode, and it ships to Aqua from
 your own wallet. Funds never move until a taker swaps.
+
+**None of this is new capability** — a Uniswap v4 hook can do all of it, and
+more. What changes is where the strategy lives. A hook is a contract you write,
+deploy and are responsible for, and its rules bind every LP in the pool. Here
+the strategy is *data*: bytecode interpreted by an already-deployed, audited VM,
+authored per-maker, so two makers on the same pair can run opposite strategies
+against liquidity that never leaves their wallets. Changing it is a re-ship, not
+a redeploy.
+
+The bet is that the barrier to custom market making was never expressiveness —
+it was having to ship a contract to express anything at all.
 
 ```mermaid
 flowchart LR

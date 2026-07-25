@@ -335,7 +335,9 @@ export function Canvas({ demo, onShipped }: CanvasProps) {
           <button key={t.id} className="template" onClick={() => loadTemplate(t.id)}>
             <strong>
               {t.label}
-              {t.novel && <em title="not expressible in a constant-product pool"> ✦</em>}
+              {t.stateful && (
+                <em title="Behaviour changes with direction or inventory — elsewhere that means deploying a contract"> ✦</em>
+              )}
             </strong>
             <small>{t.blurb}</small>
           </button>

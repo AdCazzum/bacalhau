@@ -28,8 +28,9 @@ buttons — *they sell you WETH* / *they buy WETH from you* — and let the
 highlighted path and the fee in the summary flip: 0.05% one way, 0.5% the other.
 Line: "A strategy here is a program with branches. This one quotes each side of
 the book differently: cheap for whoever sells me ETH, expensive for whoever buys
-it. A constant-product pool has exactly one fee, symmetric, so this simply isn't
-expressible there. The highlight is the path the VM would actually run."
+it. You could write that as a Uniswap v4 hook — but then it's a contract you
+deploy, and it binds every LP in the pool. This is bytecode, it's mine alone,
+and the highlight is the path the VM would actually run."
 
 ### Beat 2 — Our own instruction (1:00–1:40)
 Screen: template **Adaptive desk**, six nodes. Point at `If Inventory Above 70%`
@@ -77,6 +78,14 @@ Likely questions, one-line answers ready:
   tilt proportional to distance from the target split) and **0x23 If Inventory
   Above** (the state branch). Both appended to the official Aqua opcode table,
   never inserted, so existing bytecode keeps its meaning.
+- **"Isn't this just a v4 hook?"** — the question to want, especially from the
+  Uniswap table. Concede immediately: a hook expresses everything we show, and
+  more. Three differences, in order of strength: a hook is **per-pool**, so its
+  rules bind every LP in it, while a program here is **per-maker** — two makers
+  on the same pair can run opposite strategies; a hook is a **contract you
+  deploy and own the risk of**, ours is data run by an already-audited VM; and
+  the funds stay in the maker's wallet, backing several strategies at once.
+  Never claim we can do something Uniswap cannot — we cannot, and they know it.
 - "Why is the dashboard showing different numbers from the canvas?" → two
   chains on purpose: the live demo runs on a local Base fork, while the Graph
   panel indexes our real Base Sepolia deployment. An indexer cannot see anvil.

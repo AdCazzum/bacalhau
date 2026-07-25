@@ -136,7 +136,8 @@ Only takers holding at least X of a given token can fill (allowlist-by-stake).
 
 Shipped in `app/src/lib/templates.ts`, built as a function of the live
 allocation so the numbers always match what is about to be shipped. ✦ marks the
-ones a constant-product pool cannot express.
+ones whose behaviour changes with direction or inventory instead of being one
+static curve — expressible in a v4 hook too, but there as a deployed contract.
 
 | Template | Graph | What it is |
 |---|---|---|

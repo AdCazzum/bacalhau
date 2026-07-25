@@ -33,8 +33,13 @@ export interface Template {
   label: string;
   /** One line, shown under the button; plain language, no opcode jargon. */
   blurb: string;
-  /** True when the strategy cannot be expressed by a constant-product pool. */
-  novel?: boolean;
+  /**
+   * True when behaviour changes with trade direction or inventory, rather than
+   * being one static curve. Deliberately not "impossible elsewhere" — a v4 hook
+   * expresses all of these. The point is that here it is bytecode rather than a
+   * contract you deploy.
+   */
+  stateful?: boolean;
   build(ctx: TemplateContext): StrategyGraph;
 }
 
@@ -108,7 +113,7 @@ export const TEMPLATES: Template[] = [
     id: "selfBalancing",
     label: "Self-balancing MM",
     blurb: "Quotes tilt to defend your current mix: trades that rebalance you get a better price.",
-    novel: true,
+    stateful: true,
     build: (ctx) => {
       const t = targetsForShare(ctx, 0.5);
       return {
@@ -126,7 +131,7 @@ export const TEMPLATES: Template[] = [
     id: "accumulateEth",
     label: "Accumulate ETH",
     blurb: "Pay up to buy ETH, charge up to sell it: you drift to 70% ETH and earn fees doing it.",
-    novel: true,
+    stateful: true,
     build: (ctx) => {
       const t = targetsForShare(ctx, 0.7);
       return {
@@ -159,7 +164,7 @@ export const TEMPLATES: Template[] = [
     id: "twoSided",
     label: "Two-sided desk",
     blurb: "Cheap when someone sells you ETH, expensive when they buy: the graph forks on direction.",
-    novel: true,
+    stateful: true,
     build: (ctx) => ({
       nodes: [
         { id: "side", kind: "ifDirection", token: ctx.weth },
@@ -179,7 +184,7 @@ export const TEMPLATES: Template[] = [
     id: "adaptive",
     label: "Adaptive desk",
     blurb: "A state machine: accumulate ETH until you hold 70%, then flip to distributing it.",
-    novel: true,
+    stateful: true,
     build: (ctx) => {
       const trigger = targetsForShare(ctx, 0.7);
       const distribute = targetsForShare(ctx, 0.3);

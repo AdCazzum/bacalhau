@@ -20,8 +20,9 @@ The flagship screen. Three zones:
 ```
 
 - **Templates** (left, top): one click loads a complete strategy, laid out
-  left-to-right with branches stacked. Ones that a constant-product pool cannot
-  express are marked, because that is the pitch.
+  left-to-right with branches stacked. Ones whose behaviour changes with
+  direction or inventory are marked ✦ — not because they are impossible
+  elsewhere, but because elsewhere they are a deployed contract.
 - **Palette** (left, below): blocks as cards with zone, name, one-line
   description. Our own SwapVM instructions carry a star — the custom opcodes are
   the technical claim, so they should be visible, not buried.
