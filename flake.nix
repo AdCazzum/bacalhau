@@ -78,6 +78,12 @@
               hash = "sha256-xWx5HudRWUKGHX2wBim4XEDdFys3oQlKq2isPgKxfLY=";
             };
 
+            # The public build targets Base Sepolia: the anvil fork the local
+            # demo uses lives on 127.0.0.1 and is unreachable from a visitor's
+            # browser, so the write paths are disabled and the app reads the
+            # real Sepolia deployment instead.
+            env.VITE_PUBLIC_DEMO = "1";
+
             buildPhase = ''
               runHook preBuild
               pnpm build
@@ -85,10 +91,13 @@
             '';
 
             # dist/ already contains _worker.js (copied verbatim from public/),
-            # so $out is a self-contained Cloudflare Pages deploy root.
+            # so $out is a self-contained Cloudflare Pages deploy root. The
+            # deployment record ships under the name the app already fetches,
+            # so nothing in the client needs to know which chain it got.
             installPhase = ''
               runHook preInstall
               cp -r dist $out
+              cp ${./contracts/deployments/sepolia.json} $out/local.json
               runHook postInstall
             '';
           });

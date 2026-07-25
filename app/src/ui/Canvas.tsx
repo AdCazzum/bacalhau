@@ -35,7 +35,7 @@ import {
 } from "../compiler/graph";
 import { BPS } from "../compiler/opcodes";
 import { aquaAbi } from "../lib/abi";
-import { publicClient, walletClient } from "../lib/chain";
+import { canWrite, publicClient, walletClient } from "../lib/chain";
 import { buildAquaOrder, encodeOrder } from "../lib/order";
 import { previewAmountOut } from "../lib/preview";
 import { TEMPLATES } from "../lib/templates";
@@ -437,7 +437,7 @@ export function Canvas({ demo, onShipped }: CanvasProps) {
 
         <button
           className="ship"
-          disabled={shipState !== "idle" || errors.length > 0 || graph.nodes.length === 0 || !dep}
+          disabled={!canWrite || shipState !== "idle" || errors.length > 0 || graph.nodes.length === 0 || !dep}
           onClick={ship}
         >
           {shipState === "idle" ? "Ship strategy" : shipState === "signing" ? "Signing…" : "Shipping…"}

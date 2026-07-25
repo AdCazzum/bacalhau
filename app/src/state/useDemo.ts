@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { Address, Hex } from "viem";
+import type { Address, GetContractEventsReturnType, Hex } from "viem";
 
 import { aquaAbi, erc20Abi } from "../lib/abi";
 import { loadDeployment, publicClient, type Deployment } from "../lib/chain";
@@ -84,14 +84,44 @@ export function useDemo(): DemoState {
   return { deployment, strategies, fills, wallet, error, refresh: () => setTick((t) => t + 1) };
 }
 
+type AquaEvents = GetContractEventsReturnType<typeof aquaAbi>;
+
+/**
+ * Public RPCs cap eth_getLogs at a 2000-block span, and the Base Sepolia
+ * deployment is thousands of blocks behind the head. anvil has no such cap,
+ * but paginating there costs one request, so the same path serves both.
+ */
+const LOG_WINDOW = 2000n;
+const LOG_CONCURRENCY = 8;
+
+async function fetchAquaEvents(dep: Deployment): Promise<AquaEvents> {
+  const head = await publicClient.getBlockNumber();
+  const ranges: { fromBlock: bigint; toBlock: bigint }[] = [];
+  for (let from = BigInt(dep.deployBlock); from <= head; from += LOG_WINDOW) {
+    const to = from + LOG_WINDOW - 1n;
+    ranges.push({ fromBlock: from, toBlock: to > head ? head : to });
+  }
+
+  // Batched rather than one big Promise.all: public endpoints rate-limit, and
+  // sequential batches keep the results in block order for the reducer below.
+  let events: AquaEvents = [];
+  for (let i = 0; i < ranges.length; i += LOG_CONCURRENCY) {
+    const batch = await Promise.all(
+      ranges
+        .slice(i, i + LOG_CONCURRENCY)
+        .map((range) =>
+          publicClient.getContractEvents({ address: dep.aqua, abi: aquaAbi, ...range }),
+        ),
+    );
+    events = events.concat(...batch);
+  }
+  return events;
+}
+
 async function sync(
   dep: Deployment,
 ): Promise<{ strategies: Strategy[]; fills: Fill[]; wallet: WalletBalances }> {
-  const logs = await publicClient.getContractEvents({
-    address: dep.aqua,
-    abi: aquaAbi,
-    fromBlock: BigInt(dep.deployBlock),
-  });
+  const logs = await fetchAquaEvents(dep);
 
   const docked = new Set<Hex>();
   const shipped = new Map<Hex, Order>();

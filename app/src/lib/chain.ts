@@ -7,7 +7,7 @@ import {
   type Hex,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { base } from "viem/chains";
+import { base, baseSepolia } from "viem/chains";
 
 /**
  * PoC posture (docs/08): the app drives a local demo wallet directly —
@@ -15,19 +15,35 @@ import { base } from "viem/chains";
  */
 const DEMO_KEY: Hex = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 
+/**
+ * The public build targets Base Sepolia, where the demo deployment is real
+ * and reachable; the local build targets the anvil fork on 127.0.0.1, which
+ * only exists on the machine running `nix run .#dev`.
+ */
+export const isPublicDemo = import.meta.env.VITE_PUBLIC_DEMO === "1";
+
 /** anvil fork of Base: chain id 8453 (must match for Permit2 EIP-712), local RPC. */
 const forkChain = defineChain({
   ...base,
   rpcUrls: { default: { http: ["http://127.0.0.1:8545"] } },
 });
 
+const chain = isPublicDemo ? baseSepolia : forkChain;
+
+/**
+ * Writes need a funded key. Locally that is anvil account #0; on the public
+ * build it would mean shipping a funded private key in the bundle, so the
+ * write paths are disabled instead.
+ */
+export const canWrite = !isPublicDemo;
+
 export const demoAccount = privateKeyToAccount(DEMO_KEY);
 
-export const publicClient = createPublicClient({ chain: forkChain, transport: http() });
+export const publicClient = createPublicClient({ chain, transport: http() });
 
 export const walletClient = createWalletClient({
   account: demoAccount,
-  chain: forkChain,
+  chain,
   transport: http(),
 });
 
@@ -40,13 +56,20 @@ export interface Deployment {
   chainId: number;
   deployBlock: number;
   maker: Address;
-  taker: Address;
+  /** Absent on the public Base Sepolia record: fill simulation is local-only. */
+  taker?: Address;
   seedStrategyHash: Hex;
 }
 
-const NO_DEPLOYMENT = "No local deployment found — run ./scripts/demo-env.sh, then reload.";
+const NO_DEPLOYMENT = isPublicDemo
+  ? "Deployment record missing from this build — this is a bug, please report it."
+  : "No local deployment found — run ./scripts/demo-env.sh, then reload.";
 
-/** Written by scripts/demo-env.sh into app/public/local.json. */
+/**
+ * Locally this is written by scripts/demo-env.sh into app/public/local.json;
+ * the public build ships contracts/deployments/sepolia.json under the same
+ * name, so the app does not care which chain it ended up on.
+ */
 export async function loadDeployment(): Promise<Deployment> {
   const res = await fetch("/local.json");
   // The dev server answers unknown paths with index.html (SPA fallback), so a
