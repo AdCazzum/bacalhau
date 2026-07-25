@@ -14,7 +14,7 @@
 
       systems = [ "aarch64-darwin" "x86_64-darwin" "x86_64-linux" "aarch64-linux" ];
 
-      perSystem = { system, pkgs, ... }:
+      perSystem = { system, pkgs, self', ... }:
         let
           rustToolchain = pkgs.rust-bin.stable.latest.default.override {
             targets = [ "wasm32-unknown-unknown" ];
@@ -60,6 +60,60 @@
           demoPath = pkgs.lib.makeBinPath (with pkgs; [
             foundry nodejs_22 pnpm jq bash coreutils gnugrep gnused curl
           ]);
+
+          # The public demo build. Hermetic: pnpm deps are fetched by hash and
+          # the build runs offline, so `result` is byte-identical locally and
+          # in CI. No secrets are passed in — the Uniswap key lives in the
+          # Pages worker (app/public/_worker.js), never in the bundle.
+          site = pkgs.stdenv.mkDerivation (finalAttrs: {
+            pname = "bacalhau-site";
+            version = "0.1.0";
+            src = ./app;
+
+            nativeBuildInputs = [ pkgs.nodejs_22 pkgs.pnpm pkgs.pnpmConfigHook ];
+
+            pnpmDeps = pkgs.fetchPnpmDeps {
+              inherit (finalAttrs) pname version src;
+              fetcherVersion = 4;
+              hash = "sha256-xWx5HudRWUKGHX2wBim4XEDdFys3oQlKq2isPgKxfLY=";
+            };
+
+            buildPhase = ''
+              runHook preBuild
+              pnpm build
+              runHook postBuild
+            '';
+
+            # dist/ already contains _worker.js (copied verbatim from public/),
+            # so $out is a self-contained Cloudflare Pages deploy root.
+            installPhase = ''
+              runHook preInstall
+              cp -r dist $out
+              runHook postInstall
+            '';
+          });
+
+          # Impure by nature (network + credentials), so it is an app rather
+          # than a package: `nix run .#deploy` uploads the derivation above.
+          deploy = pkgs.writeShellApplication {
+            name = "bacalhau-deploy";
+            runtimeInputs = [ pkgs.wrangler ];
+            text = ''
+              project="''${CF_PAGES_PROJECT:-bacalhau}"
+              branch="''${CF_PAGES_BRANCH:-main}"
+
+              # Keep the worker's key in step with the deploy when one is
+              # provided; otherwise leave whatever is already configured.
+              if [ -n "''${UNISWAP_API_KEY:-}" ]; then
+                echo "$UNISWAP_API_KEY" \
+                  | wrangler pages secret put UNISWAP_API_KEY --project-name "$project"
+              fi
+
+              wrangler pages deploy ${self'.packages.site} \
+                --project-name "$project" \
+                --branch "$branch"
+            '';
+          };
         in {
           _module.args.pkgs = import inputs.nixpkgs {
             inherit system;
@@ -102,6 +156,10 @@
             };
           };
 
+          packages.site = site;
+          packages.deploy = deploy;
+          apps.deploy.program = pkgs.lib.getExe deploy;
+
           devShells.default = pkgs.mkShell {
             packages = with pkgs; [
               # Contracts (Aqua app + SwapVM custom instruction)
@@ -110,6 +168,9 @@
               # Frontend + subgraph tooling (graph-cli comes via pnpm)
               nodejs_22
               pnpm
+
+              # Cloudflare Pages deploys (`nix run .#deploy` uses this too)
+              wrangler
 
               # Substreams module (Rust -> wasm) + protobuf codegen + CLI
               rustToolchain
