@@ -43,11 +43,15 @@ ROUTER=$(jq -r .router "$DEP")
 WETH=$(jq -r .weth "$DEP")
 USDC=$(jq -r .usdc "$DEP")
 HASH=$(jq -r .seedStrategyHash "$DEP")
-# Fund maker (WETH+USDC for the strategy) and taker (WETH for the fill).
+# Fund maker and taker on both sides. The taker gets enough WETH to push the
+# maker's wallet past the 55% rebalance threshold in one or two swaps (the
+# gauge reads the whole wallet, so small fills barely move it), and USDC so
+# the buy direction can be demonstrated too.
 cast rpc anvil_setBalance "$MAKER" 0xde0b6b3a7640000 --rpc-url "$RPC_URL" >/dev/null
 ./scripts/deal.sh "$WETH" "$MAKER" 1000000000000000000000 "$RPC_URL"
 ./scripts/deal.sh "$USDC" "$MAKER" 2000000000000 "$RPC_URL"
-./scripts/deal.sh "$WETH" "$TAKER" 10000000000000000000 "$RPC_URL"
+./scripts/deal.sh "$WETH" "$TAKER" 1000000000000000000000 "$RPC_URL"
+./scripts/deal.sh "$USDC" "$TAKER" 2000000000000 "$RPC_URL"
 
 # The seed strategy starts live with zero fills; the first swap is done from
 # the app (test-swap panel), which is the live demo beat anyway.
